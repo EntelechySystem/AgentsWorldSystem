@@ -1,4 +1,4 @@
-repository "AgentsWorldSystem@EthanSystem@cloud"
+repository "AgentsWorldSystem@ethansystem@cloud.cn"
   path "/"
     br "/main"
     co "/main"

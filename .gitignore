@@ -8,10 +8,14 @@
 # AgentsWorldSystem_Unity3D/.idea/
 .idea/
 
-
-*/.sync.ffs_db
-
 Reference
+
+
+
+
+*.ffs_db
+
+
 
 
 
@@ -1023,6 +1027,5 @@ $RECYCLE.BIN/
 # Additional files built by Visual Studio
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,windows,linux,obsidian,visualstudiocode,visualstudio,rider,godot,unity,unrealengine,csharp,swift,swiftpm,swiftpackagemanager,goodsync
-
 
 

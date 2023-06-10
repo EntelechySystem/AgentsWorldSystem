@@ -1,4 +1,0 @@
-repository "AgentsWorldSystem@ethansystem@cloud.cn"
-  path "/"
-    br "/main"
-    co "/main"

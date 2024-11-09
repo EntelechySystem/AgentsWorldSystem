@@ -131,10 +131,19 @@ class SimpleEnv(AECEnv):
     def _seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
 
-    def observe(self, agent):
-        return self.scenario.observation(
-            self.world.agents[self._index_map[agent]], self.world
-        ).astype(np.float32)
+    def observation(self, agent):
+        visible_entities = self.world.get_visible_entities(agent)
+        entity_pos = []
+        for entity in visible_entities:
+            entity_pos.append(entity.state.p_pos - agent.state.p_pos)
+        return np.concatenate([agent.state.p_vel] + entity_pos)
+
+    # def observe(self, agent):
+    #     return self.scenario.observation(
+    #         self.world.agents[self._index_map[agent]], self.world
+    #     ).astype(np.float32)
+
+
 
     def state(self):
         states = tuple(

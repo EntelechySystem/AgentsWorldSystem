@@ -79,6 +79,8 @@ class Agent(Entity):  # properties of agent entities
         self.action = Action()
         # script behavior to execute
         self.action_callback = None
+        # 视野半径（视野默认是俯视角，可以穿墙） #TODO 后续考虑加入视野角度，视野是俯视角但是从个体中心向外辐射，因此视野不能够穿越非透明的障碍物。
+        self.vision_radius = 10.0  # 可视半径
 
 
 class World:  # multi-agent world

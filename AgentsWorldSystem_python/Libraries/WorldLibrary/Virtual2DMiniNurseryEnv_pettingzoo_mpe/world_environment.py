@@ -65,20 +65,6 @@ class Scenario(BaseScenario):
         # world.agents = [Agent() for i in range(1)]
 
         agents_name = [f'婴儿-{i}' for i in range(1, N + 1)]
-        # action_spaces = {
-        #     '移动运动': spaces.Box(low=-1, high=1, shape=(2,), dtype=np.float32),  # 连续动作空间
-        #     '抓取运动': spaces.Discrete(2),  # 0: 无抓取物体，1: 抓取物体 。这里简化抓取运动为二元动作。真实的抓取运动十分复杂，需要更复杂的动作空间。
-        #     '行为': spaces.Discrete(2),  # 0: 睡觉，1: 醒来。
-        #     '表情': spaces.Discrete(6),  # 0: 静，1: 喜，2: 怒，3: 哀，4: 惧，5: 思。 这里简化了输出的表情为六元动作。
-        #     '说话': spaces.Text(256),  # 简化地用文本信息模拟语言语音发音，单次最大发音长度为指定的字符
-        # }
-        # observation_spaces = {
-        #     '视觉': spaces.Box(low=0, high=255, shape=(640, 480, 3), dtype=np.uint8),  # 简化的视觉。以传入的图像信息模拟视觉信息。最大接收长度为 640x480x3 像素通道。通过多个时刻接收的图像作为帧，作为接收的视频信息。
-        #     '听觉': spaces.Text(1024),  # 简化地用文本信息模拟语言语音听觉，模拟来自教育者发送的认识字词句的视觉信息。最大接收长度为指定的字符
-        #     '触觉': spaces.Discrete(5),  # 0: 无碰触，1: 轻度碰触，2: 中度碰触，3: 重度碰触，4: 疼痛
-        #     '味觉': spaces.Discrete(2),  # 0: 无味觉，1: 有味觉
-        #     '温度知觉': spaces.Box(low=0, high=1, shape=(1,), dtype=np.float32),  # 0: 很冷，1: 很热
-        # }
 
         # add agents
         for i, agent in enumerate(world.agents):
@@ -95,7 +81,6 @@ class Scenario(BaseScenario):
             landmark.collide = False
             landmark.movable = False
         return world
-
         pass  # function
 
     def reset_world(self, world, np_random):
@@ -208,8 +193,9 @@ class Scenario(BaseScenario):
         ])
 
         return np.concatenate([array_observation_010, array_observation_020, array_observation_030])
+        pass  # function
 
     def close(self):
-        pass
+        pass  # function
 
     pass  # class

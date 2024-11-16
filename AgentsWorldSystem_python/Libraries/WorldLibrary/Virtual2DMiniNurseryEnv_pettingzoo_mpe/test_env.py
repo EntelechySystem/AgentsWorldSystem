@@ -1,6 +1,6 @@
 import pygame
 
-from Libraries.WorldLibrary.虚拟2D迷你育儿室_pettingzoo_mpe.world_environment import env, parallel_env, raw_env
+from Libraries.WorldLibrary.Virtual2DMiniNurseryEnv_pettingzoo_mpe.world_environment import env, parallel_env, raw_env
 
 my_env = parallel_env(render_mode="human")
 observations, infos = my_env.reset()

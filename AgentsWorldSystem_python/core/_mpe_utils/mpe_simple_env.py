@@ -37,13 +37,13 @@ class SimpleEnv(AECEnv):
     }
 
     def __init__(
-        self,
-        scenario,
-        world,
-        max_cycles,
-        render_mode=None,
-        continuous_actions=False,
-        local_ratio=None,
+            self,
+            scenario,
+            world,
+            max_cycles,
+            render_mode=None,
+            continuous_actions=False,
+            local_ratio=None,
     ):
         super().__init__()
 
@@ -95,15 +95,36 @@ class SimpleEnv(AECEnv):
                     space_dim += self.world.dim_c
                 else:
                     space_dim *= self.world.dim_c
+            if agent.具有视觉:
+                视觉_dim = self.world.dim_视觉
+            if agent.具有听觉:
+                听觉_dim = self.world.dim_听觉
+            if agent.具有说话能力:
+                说话_dim = self.world.dim_说话
+            if agent.具有抓取运动能力:
+                抓取运动_dim = self.world.dim_抓取运动
+            if agent.需要睡眠:
+                睡眠_dim = self.world.dim_睡眠
+            if agent.需要饮食:
+                饮食_dim = self.world.dim_饮食
+            if agent.具有表情:
+                表情_dim = self.world.dim_表情
 
             obs_dim = len(self.scenario.observation(agent, self.world))
             state_dim += obs_dim
-            if self.continuous_actions:
+            if self.continuous_actions:  # #HACK 这个 continuous_actions 似乎没有用了
                 self.action_spaces[agent.name] = spaces.Box(
                     low=0, high=1, shape=(space_dim,)
                 )
             else:
-                self.action_spaces[agent.name] = spaces.Discrete(space_dim)
+                self.action_spaces[agent.name] = spaces.Dict({
+                    '移动运动': spaces.Discrete(space_dim),
+                    '说话': spaces.Text(说话_dim),
+                    '抓取运动': spaces.Discrete(抓取运动_dim),
+                    '睡眠': spaces.Discrete(睡眠_dim),
+                    '饮食': spaces.Discrete(饮食_dim),
+                    '表情': spaces.Discrete(表情_dim),
+                })
             self.observation_spaces[agent.name] = spaces.Box(
                 low=-np.float32(np.inf),
                 high=+np.float32(np.inf),
@@ -131,19 +152,17 @@ class SimpleEnv(AECEnv):
     def _seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
 
-    def observation(self, agent):
-        visible_entities = self.world.get_visible_entities(agent)
-        entity_pos = []
-        for entity in visible_entities:
-            entity_pos.append(entity.state.p_pos - agent.state.p_pos)
-        return np.concatenate([agent.state.p_vel] + entity_pos)
+    def observe(self, agent):
+        return self.scenario.observation(
+            self.world.agents[self._index_map[agent]], self.world
+        ).astype(np.float32)
 
-    # def observe(self, agent):
-    #     return self.scenario.observation(
-    #         self.world.agents[self._index_map[agent]], self.world
-    #     ).astype(np.float32)
-
-
+    # def observation(self, agent):
+    #     visible_entities = self.world.get_visible_entities(agent)
+    #     entity_pos = []
+    #     for entity in visible_entities:
+    #         entity_pos.append(entity.state.p_pos - agent.state.p_pos)
+    #     return np.concatenate([agent.state.p_vel] + entity_pos)
 
     def state(self):
         states = tuple(
@@ -182,10 +201,45 @@ class SimpleEnv(AECEnv):
                     scenario_action.append(action[0:mdim])
                     action = action[mdim:]
                 else:
-                    scenario_action.append(action % mdim)
-                    action //= mdim
-            if not agent.silent:
-                scenario_action.append(action)
+                    scenario_action.append(action['移动运动'] % mdim)
+                    action['移动运动'] //= mdim
+
+            # if not agent.silent:
+            #     cdim = self.world.dim_c
+            #     scenario_action.append(action[0:cdim])
+            #     action = action[cdim:]
+
+            # if agent.具有视觉:
+            #     scenario_action.append(action[0:self.world.dim_视觉])
+            #     action = action[self.world.dim_视觉:]
+            # if agent.具有听觉:
+            #     scenario_action.append(action[0:self.world.dim_听觉])
+            #     action = action[self.world.dim_听觉:]
+            # if agent.具有说话能力:
+            #     scenario_action.append(action[0:self.world.dim_说话])
+            #     action = action[self.world.dim_说话:]
+            # if agent.具有触觉:
+            #     scenario_action.append(action[0:self.world.dim_触觉])
+            #     action = action[self.world.dim_触觉:]
+            # if agent.具有嗅觉:
+            #     scenario_action.append(action[0:self.world.dim_嗅觉])
+            #     action = action[self.world.dim_嗅觉:]
+            # if agent.具有温度知觉:
+            #     scenario_action.append(action[0:self.world.dim_温度知觉])
+            #     action = action[self.world.dim_温度知觉:]
+            # if agent.具有疼痛知觉:
+            #     scenario_action.append(action[0:self.world.dim_疼痛知觉])
+            if agent.具有说话能力:
+                scenario_action.append(action['说话'])
+            if agent.具有抓取运动能力:
+                scenario_action.append(action['抓取运动'])
+            if agent.需要睡眠:
+                scenario_action.append(action['睡眠'])
+            if agent.需要饮食:
+                scenario_action.append(action['饮食'])
+            if agent.具有表情:
+                scenario_action.append(action['表情'])
+
             self._set_action(scenario_action, agent, self.action_spaces[agent.name])
 
         self.world.step()
@@ -198,8 +252,8 @@ class SimpleEnv(AECEnv):
             agent_reward = float(self.scenario.reward(agent, self.world))
             if self.local_ratio is not None:
                 reward = (
-                    global_reward * (1 - self.local_ratio)
-                    + agent_reward * self.local_ratio
+                        global_reward * (1 - self.local_ratio)
+                        + agent_reward * self.local_ratio
                 )
             else:
                 reward = agent_reward
@@ -210,6 +264,11 @@ class SimpleEnv(AECEnv):
     def _set_action(self, action, agent, action_space, time=None):
         agent.action.u = np.zeros(self.world.dim_p)
         agent.action.c = np.zeros(self.world.dim_c)
+        agent.action.说话 = np.zeros(self.world.dim_说话)
+        agent.action.抓取运动 = np.zeros(self.world.dim_抓取运动)
+        agent.action.睡眠 = np.zeros(self.world.dim_睡眠)
+        agent.action.饮食 = np.zeros(self.world.dim_饮食)
+        agent.action.表情 = np.zeros(self.world.dim_表情)
 
         if agent.movable:
             # physical action
@@ -234,21 +293,36 @@ class SimpleEnv(AECEnv):
                 sensitivity = agent.accel
             agent.action.u *= sensitivity
             action = action[1:]
-        if not agent.silent:
-            # communication action
-            if self.continuous_actions:
-                agent.action.c = action[0]
-            else:
-                agent.action.c = np.zeros(self.world.dim_c)
-                agent.action.c[action[0]] = 1.0
+        # if not agent.silent:
+        #     # communication action
+        #     if self.continuous_actions:
+        #         agent.action.c = action[0]
+        #     else:
+        #         agent.action.c = np.zeros(self.world.dim_c)
+        #         agent.action.c[action[0]] = 1.0
+        if agent.具有说话能力:
+            agent.action.说话 = action[0]
             action = action[1:]
+        if agent.具有抓取运动能力:
+            agent.action.抓取运动 = action[0]
+            action = action[1:]
+        if agent.需要睡眠:
+            agent.action.睡眠 = action[0]
+            action = action[1:]
+        if agent.需要饮食:
+            agent.action.饮食 = action[0]
+            action = action[1:]
+        if agent.具有表情:
+            agent.action.表情 = action[0]
+            action = action[1:]
+
         # make sure we used all elements of action
         assert len(action) == 0
 
     def step(self, action):
         if (
-            self.terminations[self.agent_selection]
-            or self.truncations[self.agent_selection]
+                self.terminations[self.agent_selection]
+                or self.truncations[self.agent_selection]
         ):
             self._was_dead_step(action)
             return
@@ -315,7 +389,7 @@ class SimpleEnv(AECEnv):
                 -1
             )  # this makes the display mimic the old pyglet setup (ie. flips image)
             x = (
-                (x / cam_range) * self.width // 2 * 0.9
+                    (x / cam_range) * self.width // 2 * 0.9
             )  # the .9 is just to keep entities from appearing "too" out-of-bounds
             y = (y / cam_range) * self.height // 2 * 0.9
             x += self.width // 2
@@ -327,7 +401,7 @@ class SimpleEnv(AECEnv):
                 self.screen, (0, 0, 0), (x, y), entity.size * 350, 1
             )  # borders
             assert (
-                0 < x < self.width and 0 < y < self.height
+                    0 < x < self.width and 0 < y < self.height
             ), f"Coordinates {(x, y)} are out of bounds."
 
             # text
@@ -338,7 +412,7 @@ class SimpleEnv(AECEnv):
                     word = "_"
                 elif self.continuous_actions:
                     word = (
-                        "[" + ",".join([f"{comm:.2f}" for comm in entity.state.c]) + "]"
+                            "[" + ",".join([f"{comm:.2f}" for comm in entity.state.c]) + "]"
                     )
                 else:
                     word = alphabet[np.argmax(entity.state.c)]

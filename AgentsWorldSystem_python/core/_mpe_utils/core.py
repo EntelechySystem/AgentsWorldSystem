@@ -1,4 +1,5 @@
 import numpy as np
+from gymnasium import spaces
 
 
 class EntityState:  # physical/external base state of all entities
@@ -16,6 +17,26 @@ class AgentState(
         super().__init__()
         # communication utterance
         self.c = None
+        # 看到的内容
+        self.看到的内容 = spaces.Box(low=0, high=255, shape=(16, 12, 3), dtype=np.uint8)
+        # 听到的内容
+        self.听到的内容 = spaces.Text(64)
+        # 摸到的内容
+        self.摸到的内容 = spaces.Discrete(3)  # 0: 无摸到物体，1: 摸到物体 ，2: 抓取着物体 。这里简化摸到运动为离散动作值
+        # 闻到的内容
+        self.闻到的内容 = spaces.Discrete(2)  # 0: 无闻到物体，1: 闻到物体 。这里简化闻到运动为离散动作值
+        # 感知的温度
+        self.感知的温度 = spaces.Box(low=0.0, high=60.0, shape=(1, 1), dtype=np.float32)  # 0~60摄氏度
+        # 说话状态
+        self.说话状态 = spaces.Discrete(2)  # 0: 不说话，1: 说话。这里简化了说话状态为二元动作。
+        # 抓取状态
+        self.抓取状态 = spaces.Discrete(2)  # 0: 无抓取物体，1: 抓取物体 。这里简化抓取运动为二元动作。真实的抓取运动十分复杂，需要更复杂的动作空间。
+        # 困倦状态
+        self.困倦状态 = spaces.Box(low=0, high=1.0, shape=(1, 1), dtype=np.float32)  # 0: 不困倦，1: 困倦。这里简化困倦状态为连续动作。
+        # 饥饿状态
+        self.饥饿状态 = spaces.Box(low=0, high=1.0, shape=(1, 1), dtype=np.float32)  # 0: 不饥饿，1: 饥饿。这里简化饥饿状态为连续动作。
+        # 呈现的表情
+        self.呈现的表情 = spaces.Discrete(6),  # 0: 静，1: 喜，2: 怒，3: 哀，4: 惧，5: 思。 这里简化了输出的表情为离散动作值
 
 
 class Action:  # action of the agent
@@ -24,6 +45,16 @@ class Action:  # action of the agent
         self.u = None
         # communication action
         self.c = None
+        # 说话
+        self.说话 = None
+        # 抓取运动
+        self.抓取运动 = None
+        # 睡眠
+        self.睡眠 = None
+        # 饮食
+        self.饮食 = None
+        # 表情
+        self.表情 = None
 
 
 class Entity:  # properties and state of physical world entity
@@ -67,6 +98,28 @@ class Agent(Entity):  # properties of agent entities
         self.silent = False
         # cannot observe the world
         self.blind = False
+        # 具有视觉
+        self.具有视觉 = True
+        # 具有听觉
+        self.具有听觉 = True
+        # 具有说话能力
+        self.具有说话能力 = True
+        # 具有触觉
+        self.具有触觉 = True
+        # 具有嗅觉
+        self.具有嗅觉 = True
+        # 具有温度知觉
+        self.具有温度知觉 = True
+        # 具有疼痛知觉
+        self.具有疼痛知觉 = True
+        # 具有抓取运动能力
+        self.具有抓取运动能力 = True
+        # 需要睡眠
+        self.需要睡眠 = True
+        # 需要饮食
+        self.需要饮食 = True
+        # 具有表情
+        self.具有表情 = True
         # physical motor noise amount
         self.u_noise = None
         # communication noise amount
@@ -80,7 +133,7 @@ class Agent(Entity):  # properties of agent entities
         # script behavior to execute
         self.action_callback = None
         # 视野半径（视野默认是俯视角，可以穿墙） #TODO 后续考虑加入视野角度，视野是俯视角但是从个体中心向外辐射，因此视野不能够穿越非透明的障碍物。
-        self.vision_radius = 10.0  # 可视半径
+        self.vision_radius = 10.0  # 可视半径  #TODO 暂时还没有用起来
 
 
 class World:  # multi-agent world
@@ -89,9 +142,31 @@ class World:  # multi-agent world
         self.agents = []
         self.landmarks = []
         # communication channel dimensionality
-        self.dim_c = 0
+        self.dim_c = 1
         # position dimensionality
         self.dim_p = 2
+        # 视觉 dimensionality
+        self.dim_视觉 = 16 * 12 * 3
+        # 听觉 dimensionality
+        self.dim_听觉 = 64
+        # 说话 dimensionality
+        self.dim_说话 = 64
+        # 触觉 dimensionality
+        self.dim_触觉 = 1
+        # 嗅觉 dimensionality
+        self.dim_嗅觉 = 1
+        # 温度知觉 dimensionality
+        self.dim_温度知觉 = 1
+        # 疼痛知觉 dimensionality
+        self.dim_疼痛知觉 = 1
+        # 抓取运动 dimensionality
+        self.dim_抓取运动 = 1
+        # 睡眠行为 dimensionality
+        self.dim_睡眠 = 1
+        # 饮食行为 dimensionality
+        self.dim_饮食 = 1
+        # 呈现的表情 dimensionality
+        self.dim_表情 = 1
         # color dimensionality
         self.dim_color = 3
         # simulation timestep
@@ -180,12 +255,12 @@ class World:  # multi-agent world
                 )
                 if speed > entity.max_speed:
                     entity.state.p_vel = (
-                        entity.state.p_vel
-                        / np.sqrt(
-                            np.square(entity.state.p_vel[0])
-                            + np.square(entity.state.p_vel[1])
-                        )
-                        * entity.max_speed
+                            entity.state.p_vel
+                            / np.sqrt(
+                        np.square(entity.state.p_vel[0])
+                        + np.square(entity.state.p_vel[1])
+                    )
+                            * entity.max_speed
                     )
 
     def update_agent_state(self, agent):

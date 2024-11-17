@@ -8,9 +8,9 @@ import numpy as np
 from gymnasium.utils import EzPickle
 from pettingzoo.utils.conversions import parallel_wrapper_fn
 
-from core._mpe_utils.core import Agent, Landmark, World
-from core._mpe_utils.scenario import BaseScenario
-from core._mpe_utils.mpe_simple_env import SimpleEnv, make_env
+from ._mpe_utils.core import Agent, Landmark, World
+from ._mpe_utils.scenario import BaseScenario
+from ._mpe_utils.mpe_simple_env import SimpleEnv, make_env
 
 
 # from pettingzoo.utils import wrappers

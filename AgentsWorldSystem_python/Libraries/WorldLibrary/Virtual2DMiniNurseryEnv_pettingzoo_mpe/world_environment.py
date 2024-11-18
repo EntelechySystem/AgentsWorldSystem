@@ -1,5 +1,5 @@
 """
-@Desc   : 虚拟2D迷你育儿室环境 Virtual 2D Mini Nursery Env
+@Desc   : 虚拟2D迷你育儿室环境 Virtual 2D Mini Nursery Env，基于 PettingZoo 的自行改造的 MPE 环境
 """
 
 import numpy as np

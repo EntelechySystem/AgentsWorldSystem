@@ -18,7 +18,7 @@ class AgentState(
         # communication utterance
         self.c = None
         # 看到的内容
-        self.看到的内容 = spaces.Box(low=0, high=255, shape=(16, 12, 3), dtype=np.uint8)
+        self.看到的内容 = spaces.Box(low=0, high=255, shape=(640, 480, 3), dtype=np.uint8)
         # 听到的内容
         self.听到的内容 = spaces.Text(64)
         # 摸到的内容
@@ -49,12 +49,12 @@ class Action:  # action of the agent
         self.说话 = None
         # 抓取运动
         self.抓取运动 = None
+        # 表情
+        self.表情 = None
         # 睡眠
         self.睡眠 = None
         # 饮食
         self.饮食 = None
-        # 表情
-        self.表情 = None
 
 
 class Entity:  # properties and state of physical world entity

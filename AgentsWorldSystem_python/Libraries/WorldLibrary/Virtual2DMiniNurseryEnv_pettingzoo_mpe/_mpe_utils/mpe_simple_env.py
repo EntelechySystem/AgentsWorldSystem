@@ -99,10 +99,10 @@ class SimpleEnv(AECEnv):
                 视觉_dim = self.world.dim_视觉
             if agent.具有听觉:
                 听觉_dim = self.world.dim_听觉
-            if agent.具有说话能力:
-                说话_dim = self.world.dim_说话
             if agent.具有表情:
                 表情_dim = self.world.dim_表情
+            if agent.具有说话能力:
+                说话_dim = self.world.dim_说话
             if agent.具有抓取运动能力:
                 抓取运动_dim = self.world.dim_抓取运动
             if agent.需要睡眠:

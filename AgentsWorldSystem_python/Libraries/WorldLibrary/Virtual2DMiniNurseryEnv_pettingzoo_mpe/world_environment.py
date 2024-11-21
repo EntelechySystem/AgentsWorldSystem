@@ -148,9 +148,9 @@ class Scenario(BaseScenario):
 
     def observation(self, agent, world):
 
-        image_data = np.random.randint(0, 256, (640, 480, 3), dtype=np.uint8)  # DEBUG
-        # text_data = "一段测试文本"  # DEBUG
-        text_data = [0x10FFFF + 1] * np.ones(258, dtype=np.uint32)  # DEBUG
+        image_data = np.random.randint(0, 256, (640, 480, 3), dtype=np.uint8)  # DEBUG 这个需要用自己的模型输出表示
+        # text_data = "一段测试文本" # DEBUG 这个需要用自己的模型输出表示
+        text_data = [0x10FFFF + 1] * np.ones(258, dtype=np.uint32)  # DEBUG 这个需要用自己的模型输出表示
 
         # get positions of all entities in this agent's reference frame
         entity_pos = []

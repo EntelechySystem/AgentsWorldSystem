@@ -13,7 +13,7 @@ from pettingzoo.utils.agent_selector import agent_selector
 
 from .core import Agent
 
-alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ,;.!?:'\"/\\|_@#$%^&*~`+-=<>()[]{}"  # #HACK 这个似乎无用
 
 
 def make_env(raw_env):
@@ -101,14 +101,14 @@ class SimpleEnv(AECEnv):
                 听觉_dim = self.world.dim_听觉
             if agent.具有说话能力:
                 说话_dim = self.world.dim_说话
+            if agent.具有表情:
+                表情_dim = self.world.dim_表情
             if agent.具有抓取运动能力:
                 抓取运动_dim = self.world.dim_抓取运动
             if agent.需要睡眠:
                 睡眠_dim = self.world.dim_睡眠
             if agent.需要饮食:
                 饮食_dim = self.world.dim_饮食
-            if agent.具有表情:
-                表情_dim = self.world.dim_表情
 
             obs_dim = len(self.scenario.observation(agent, self.world))
             state_dim += obs_dim
@@ -119,11 +119,12 @@ class SimpleEnv(AECEnv):
             else:
                 self.action_spaces[agent.name] = spaces.Dict({
                     '移动运动': spaces.Discrete(space_dim),
-                    '说话': spaces.Text(说话_dim),
+                    '说话': spaces.MultiDiscrete([0x10FFFF + 1] * 说话_dim),
+                    # '说话': spaces.Box(low=0, high=0x10FFFF, shape=(256,), dtype=np.uint32),  # 备选方案
+                    '表情': spaces.Discrete(表情_dim),
                     '抓取运动': spaces.Discrete(抓取运动_dim),
                     '睡眠': spaces.Discrete(睡眠_dim),
                     '饮食': spaces.Discrete(饮食_dim),
-                    '表情': spaces.Discrete(表情_dim),
                 })
             self.observation_spaces[agent.name] = spaces.Box(
                 low=-np.float32(np.inf),
@@ -231,14 +232,14 @@ class SimpleEnv(AECEnv):
             #     scenario_action.append(action[0:self.world.dim_疼痛知觉])
             if agent.具有说话能力:
                 scenario_action.append(action['说话'])
+            if agent.具有表情:
+                scenario_action.append(action['表情'])
             if agent.具有抓取运动能力:
                 scenario_action.append(action['抓取运动'])
             if agent.需要睡眠:
                 scenario_action.append(action['睡眠'])
             if agent.需要饮食:
                 scenario_action.append(action['饮食'])
-            if agent.具有表情:
-                scenario_action.append(action['表情'])
 
             self._set_action(scenario_action, agent, self.action_spaces[agent.name])
 
@@ -265,10 +266,10 @@ class SimpleEnv(AECEnv):
         agent.action.u = np.zeros(self.world.dim_p)
         agent.action.c = np.zeros(self.world.dim_c)
         agent.action.说话 = np.zeros(self.world.dim_说话)
+        agent.action.表情 = np.zeros(self.world.dim_表情)
         agent.action.抓取运动 = np.zeros(self.world.dim_抓取运动)
         agent.action.睡眠 = np.zeros(self.world.dim_睡眠)
         agent.action.饮食 = np.zeros(self.world.dim_饮食)
-        agent.action.表情 = np.zeros(self.world.dim_表情)
 
         if agent.movable:
             # physical action
@@ -301,7 +302,12 @@ class SimpleEnv(AECEnv):
         #         agent.action.c = np.zeros(self.world.dim_c)
         #         agent.action.c[action[0]] = 1.0
         if agent.具有说话能力:
+            # agent.action.说话 = action[0: self.world.dim_说话]
+            # action = action[self.world.dim_说话:]
             agent.action.说话 = action[0]
+            action = action[1:]
+        if agent.具有表情:
+            agent.action.表情 = action[0]
             action = action[1:]
         if agent.具有抓取运动能力:
             agent.action.抓取运动 = action[0]
@@ -311,9 +317,6 @@ class SimpleEnv(AECEnv):
             action = action[1:]
         if agent.需要饮食:
             agent.action.饮食 = action[0]
-            action = action[1:]
-        if agent.具有表情:
-            agent.action.表情 = action[0]
             action = action[1:]
 
         # make sure we used all elements of action

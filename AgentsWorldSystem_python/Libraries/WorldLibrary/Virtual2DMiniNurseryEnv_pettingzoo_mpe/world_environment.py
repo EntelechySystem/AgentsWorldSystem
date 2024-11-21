@@ -3,14 +3,15 @@
 action_spaces = {
     '说话': spaces.Text(256),  # 简化地用文本信息模拟语言语音发音，单次最大发音长度为指定的字符
     '移动运动': spaces.Box(low=-1, high=1, shape=(2,), dtype=np.float32),  # 连续动作空间
-    '抓取运动': spaces.Discrete(2),  # 0: 无抓取物体，1: 抓取物体 。这里简化抓取运动为二元动作。真实的抓取运动十分复杂，需要更复杂的动作空间。
     '表情': spaces.Discrete(6),  # 0: 静，1: 喜，2: 怒，3: 哀，4: 惧，5: 思。 这里简化了输出的表情为六元动作。
+    '抓取运动': spaces.Discrete(2),  # 0: 无抓取物体，1: 抓取物体 。这里简化抓取运动为二元动作。真实的抓取运动十分复杂，需要更复杂的动作空间。
     '睡眠': spaces.Discrete(2),  # 0: 醒来，1: 睡觉。这里简化睡眠状态为二元动作。
     '饮食': spaces.Discrete(2),  # 0: 未进食，1: 进食。这里简化饥饿状态为二元动作。
 }
 observation_spaces = {
     '看到的内容': spaces.Box(low=0, high=255, shape=(640, 480, 3), dtype=np.uint8),  # 简化的视觉。以传入的图像信息模拟视觉信息。最大接收长度为 640x480x3 像素通道。通过多个时刻接收的图像作为帧，作为接收的视频信息。
-    '听到的内容': spaces.Text(1024),  # 简化地用文本信息模拟语言语音听觉，模拟来自教育者发送的认识字词句的视觉信息。最大接收长度为指定的字符
+    '听到的内容': spaces.MultiDiscrete([256] * 256)  # 简化地用编码的文本信息模拟语言语音听觉，模拟来自教育者发送的认识字词句的文本信息。最大接收长度为指定的编码后的数组长度
+    '呈现的表情': spaces.Discrete(6),  # 0: 静，1: 喜，2: 怒，3: 哀，4: 惧，5: 思。 这里简化了输出的表情为离散动作值
     '摸到的内容': spaces.Discrete(5),  # 0: 无碰触，1: 轻度碰触，2: 中度碰触，3: 重度碰触，4: 疼痛
     '闻到的内容': spaces.Discrete(2),  # 0: 无味觉，1: 有味觉
     '感知的温度': spaces.Box(low=0, high=1, shape=(1,), dtype=np.float32),  # 0: 很冷，1: 很热
@@ -18,7 +19,6 @@ observation_spaces = {
     '抓取状态': spaces.Discrete(2),  # 0: 无抓取物体，1: 抓取物体 。这里简化抓取运动为二元动作。真实的抓取运动十分复杂，需要更复杂的动作空间。
     '困倦状态': spaces.Box(low=0, high=1.0, shape=(1,), dtype=np.float32),  # 0: 不困倦，1: 困倦。这里简化困倦状态为连续动作。
     '饥饿状态': spaces.Box(low=0, high=1.0, shape=(1,), dtype=np.float32),  # 0: 不饥饿，1: 饥饿。这里简化饥饿状态为连续动作。
-    '呈现的表情': spaces.Discrete(6),  # 0: 静，1: 喜，2: 怒，3: 哀，4: 惧，5: 思。 这里简化了输出的表情为离散动作值
 }
 """
 
@@ -32,9 +32,9 @@ from ._mpe_utils.core import Agent, Landmark, World
 from ._mpe_utils.scenario import BaseScenario
 from ._mpe_utils.mpe_simple_env import SimpleEnv, make_env
 
-
 # from pettingzoo.utils import wrappers
 from gymnasium import spaces
+
 
 class raw_env(SimpleEnv, EzPickle):
     def __init__(
@@ -123,7 +123,9 @@ class Scenario(BaseScenario):
             agent.state.p_vel = np.zeros(world.dim_p)
             agent.state.c = np.zeros(world.dim_c)
             agent.state.看到的内容 = np.zeros((640, 480, 3), dtype=np.uint8)
-            agent.state.听到的内容 = ""
+            # agent.state.听到的内容 = np.zeros(256, dtype=np.uint32)
+            agent.state.听到的内容 = [0x10FFFF + 1] * np.ones(256, dtype=np.uint32)
+            agent.state.呈现的表情 = 0
             agent.state.摸到的内容 = 0
             agent.state.闻到的内容 = 0
             agent.state.感知的温度 = 37.0
@@ -131,7 +133,6 @@ class Scenario(BaseScenario):
             agent.state.抓取状态 = 0
             agent.state.困倦状态 = 0
             agent.state.饥饿状态 = 0
-            agent.state.呈现的表情 = 0
         for i, landmark in enumerate(world.landmarks):
             landmark.state.p_pos = np_random.uniform(-1, +1, world.dim_p)
             landmark.state.p_vel = np.zeros(world.dim_p)
@@ -148,7 +149,8 @@ class Scenario(BaseScenario):
     def observation(self, agent, world):
 
         image_data = np.random.randint(0, 256, (640, 480, 3), dtype=np.uint8)  # DEBUG
-        text_data = "一段测试文本"  # DEBUG
+        # text_data = "一段测试文本"  # DEBUG
+        text_data = [0x10FFFF + 1] * np.ones(258, dtype=np.uint32)  # DEBUG
 
         # get positions of all entities in this agent's reference frame
         entity_pos = []
@@ -171,11 +173,11 @@ class Scenario(BaseScenario):
         agent_听到的内容 = text_data
         # 确保 agent_听到的内容 长度为 256
         max_length = world.dim_听觉
-        if len(agent_听到的内容) > max_length:
+        if len(agent_听到的内容) >= max_length:
             agent_听到的内容 = agent_听到的内容[:max_length]
         else:
-            agent_听到的内容 = agent_听到的内容.ljust(max_length)
-        agent_听到的内容 = np.array([ord(char) for char in agent_听到的内容], dtype=np.uint32)
+            agent_听到的内容 = np.concatenate([agent_听到的内容, np.zeros(max_length - len(agent_听到的内容), dtype=np.uint32)])
+        agent_呈现的表情 = 0
         agent_摸到的内容 = 0
         agent_闻到的内容 = 0
         agent_感知的温度 = 37.0
@@ -183,7 +185,6 @@ class Scenario(BaseScenario):
         agent_抓取状态 = 0
         agent_困倦状态 = 0.0
         agent_饥饿状态 = 0.0
-        agent_呈现的表情 = 0
 
         array_observation_010 = np.concatenate(
             [agent.state.p_vel]
@@ -214,6 +215,16 @@ class Scenario(BaseScenario):
 
         return np.concatenate([array_observation_010, array_observation_020, array_observation_030])
         pass  # function
+
+    def encode_unicode_to_ascii_array(unicode_string: str) -> np.ndarray:
+        """Encode a Unicode string to an array of ASCII integers."""
+        byte_array = unicode_string.encode('utf-8')
+        return np.frombuffer(byte_array, dtype=np.uint8)
+
+    def decode_ascii_array_to_unicode(ascii_array: np.ndarray) -> str:
+        """Decode an ASCII array back to a Unicode string."""
+        byte_array = ascii_array.astype(np.uint8).tobytes()
+        return byte_array.decode('utf-8')
 
     def close(self):
         pass  # function

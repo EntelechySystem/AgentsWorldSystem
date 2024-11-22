@@ -18,15 +18,17 @@ class AgentState(
         # communication utterance
         self.c = None
         # 看到的内容
-        self.看到的内容 = spaces.Box(low=0, high=255, shape=(16, 12, 3), dtype=np.uint8)
+        self.看到的内容 = spaces.Box(low=0, high=255, shape=(640, 480, 3), dtype=np.uint8)
         # 听到的内容
-        self.听到的内容 = spaces.Text(64)
+        # self.听到的内容 = spaces.Text(64)  # 简化地用文本信息模拟语言语音听觉，模拟来自教育者发送的认识字词句的文本信息。最大接收长度为指定的字符
+        self.听到的内容 = spaces.MultiDiscrete([0x10FFFF + 1] * 256)  # 简化地用编码的文本信息模拟语言语音听觉，模拟来自教育者发送的认识字词句的文本信息。最大接收长度为指定的编码后的数组长度
+        # self.听到的内容 = spaces.Box(low=0, high=0x10FFFF, shape=(256,), dtype=np.uint32)  # 备选方案
         # 摸到的内容
         self.摸到的内容 = spaces.Discrete(3)  # 0: 无摸到物体，1: 摸到物体 ，2: 抓取着物体 。这里简化摸到运动为离散动作值
         # 闻到的内容
         self.闻到的内容 = spaces.Discrete(2)  # 0: 无闻到物体，1: 闻到物体 。这里简化闻到运动为离散动作值
         # 感知的温度
-        self.感知的温度 = spaces.Box(low=0.0, high=60.0, shape=(1, 1), dtype=np.float32)  # 0~60摄氏度
+        self.感知的温度 = spaces.Box(low=-20.0, high=100.0, shape=(1,), dtype=np.float32)  # -20~100摄氏度
         # 说话状态
         self.说话状态 = spaces.Discrete(2)  # 0: 不说话，1: 说话。这里简化了说话状态为二元动作。
         # 抓取状态
@@ -47,14 +49,14 @@ class Action:  # action of the agent
         self.c = None
         # 说话
         self.说话 = None
+        # 表情
+        self.表情 = None
         # 抓取运动
         self.抓取运动 = None
         # 睡眠
         self.睡眠 = None
         # 饮食
         self.饮食 = None
-        # 表情
-        self.表情 = None
 
 
 class Entity:  # properties and state of physical world entity
@@ -146,11 +148,11 @@ class World:  # multi-agent world
         # position dimensionality
         self.dim_p = 2
         # 视觉 dimensionality
-        self.dim_视觉 = 16 * 12 * 3
+        self.dim_视觉 = 640 * 480 * 3
         # 听觉 dimensionality
-        self.dim_听觉 = 64
+        self.dim_听觉 = 256
         # 说话 dimensionality
-        self.dim_说话 = 64
+        self.dim_说话 = 256
         # 触觉 dimensionality
         self.dim_触觉 = 1
         # 嗅觉 dimensionality

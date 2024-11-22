@@ -56,7 +56,6 @@ def process_string(input_string, target_length=256, pad_char=' ', truncate_marke
         pass  # if
     pass  # function
 
-
 while my_env.agents:
 
     # # 随机采样

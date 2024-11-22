@@ -1,5 +1,8 @@
+from __future__ import annotations
 import numpy as np
 from gymnasium import spaces
+from typing import Any
+
 
 
 class EntityState:  # physical/external base state of all entities
@@ -15,8 +18,8 @@ class AgentState(
 ):  # state of agents (including communication and internal/mental state)
     def __init__(self):
         super().__init__()
-        # communication utterance
-        self.c = None
+        # # communication utterance
+        # self.c = None
         # 看到的内容
         self.看到的内容 = spaces.Box(low=0, high=255, shape=(640, 480, 3), dtype=np.uint8)
         # 听到的内容
@@ -43,10 +46,10 @@ class AgentState(
 
 class Action:  # action of the agent
     def __init__(self):
-        # physical action
-        self.u = None
-        # communication action
-        self.c = None
+        # # physical action
+        # self.u = None
+        # # communication action
+        # self.c = None
         # 说话
         self.说话 = None
         # 表情
@@ -96,10 +99,10 @@ class Agent(Entity):  # properties of agent entities
         super().__init__()
         # agents are movable by default
         self.movable = True
-        # cannot send communication signals
-        self.silent = False
-        # cannot observe the world
-        self.blind = False
+        # # cannot send communication signals
+        # self.silent = False
+        # # cannot observe the world
+        # self.blind = False
         # 具有视觉
         self.具有视觉 = True
         # 具有听觉
@@ -143,8 +146,8 @@ class World:  # multi-agent world
         # list of agents and entities (can change at execution-time!)
         self.agents = []
         self.landmarks = []
-        # communication channel dimensionality
-        self.dim_c = 1
+        # # communication channel dimensionality
+        # self.dim_c = 1
         # position dimensionality
         self.dim_p = 2
         # 视觉 dimensionality
@@ -295,3 +298,65 @@ class World:  # multi-agent world
         force_a = +force if entity_a.movable else None
         force_b = -force if entity_b.movable else None
         return [force_a, force_b]
+
+
+
+
+class agent_selector:
+    """Outputs an agent in the given order whenever agent_select is called.
+
+    Can reinitialize to a new order.
+
+    Example:
+        >>> from pettingzoo.utils import agent_selector
+        >>> agent_selector = agent_selector(agent_order=["player1", "player2"])
+        >>> agent_selector.reset()
+        'player1'
+        >>> agent_selector.next()
+        'player2'
+        >>> agent_selector.is_last()
+        True
+        >>> agent_selector.reinit(agent_order=["player2", "player1"])
+        >>> agent_selector.next()
+        'player2'
+        >>> agent_selector.is_last()
+        False
+    """
+
+    def __init__(self, agent_order: list[Any]):
+        self.reinit(agent_order)
+
+    def reinit(self, agent_order: list[Any]) -> None:
+        """Reinitialize to a new order."""
+        self.agent_order = agent_order
+        self._current_agent = 0
+        self.selected_agent = 0
+
+    def reset(self) -> Any:
+        """Reset to the original order."""
+        self.reinit(self.agent_order)
+        return self.next()
+
+    def next(self) -> Any:
+        """Get the next agent."""
+        self._current_agent = (self._current_agent + 1) % len(self.agent_order)
+        self.selected_agent = self.agent_order[self._current_agent - 1]
+        return self.selected_agent
+
+    def is_last(self) -> bool:
+        """Check if the current agent is the last agent in the cycle."""
+        return self.selected_agent == self.agent_order[-1]
+
+    def is_first(self) -> bool:
+        """Check if the current agent is the first agent in the cycle."""
+        return self.selected_agent == self.agent_order[0]
+
+    def __eq__(self, other: agent_selector) -> bool:
+        if not isinstance(other, agent_selector):
+            return NotImplemented
+
+        return (
+            self.agent_order == other.agent_order
+            and self._current_agent == other._current_agent
+            and self.selected_agent == other.selected_agent
+        )

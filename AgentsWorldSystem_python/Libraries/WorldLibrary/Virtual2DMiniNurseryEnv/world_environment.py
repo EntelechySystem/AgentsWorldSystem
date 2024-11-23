@@ -33,9 +33,9 @@ import pygame
 
 import gymnasium
 
-from .core import Agent, Landmark, World
+from .core import Agent, Landmark, World, agent_selector
 # from .scenario import BaseScenario
-from .mpe_simple_env import SimpleEnv, make_env
+# from .mpe_simple_env import SimpleEnv, make_env
 
 # from pettingzoo.utils import wrappers
 from gymnasium import spaces
@@ -79,7 +79,6 @@ class raw_env(SimpleEnv, EzPickle):
 
 # class Scenario(BaseScenario):
 class Scenario:
-
     metadata = {
         "render_modes": ["human", "rgb_array"],
         "is_parallelizable": True,
@@ -305,7 +304,6 @@ class Scenario:
             landmark.state.p_vel = np.zeros(world.dim_p)
         pass  # function
 
-
     def _execute_world_step(self):
         # set action for each agent
         for i, agent in enumerate(self.world.agents):
@@ -499,7 +497,7 @@ class Scenario:
         cam_range = np.max(np.abs(np.array(all_poses)))
 
         # update geometry and text positions
-        text_line = 0
+        # text_line = 0
         for e, entity in enumerate(self.world.entities):
             # geometry
             x, y = entity.state.p_pos
@@ -522,27 +520,26 @@ class Scenario:
                     0 < x < self.width and 0 < y < self.height
             ), f"Coordinates {(x, y)} are out of bounds."
 
-            # text
-            if isinstance(entity, Agent):
-                if entity.silent:
-                    continue
-                if np.all(entity.state.c == 0):
-                    word = "_"
-                elif self.continuous_actions:
-                    word = (
-                            "[" + ",".join([f"{comm:.2f}" for comm in entity.state.c]) + "]"
-                    )
-                else:
-                    word = alphabet[np.argmax(entity.state.c)]
-
-                message = entity.name + " sends " + word + "   "
-                message_x_pos = self.width * 0.05
-                message_y_pos = self.height * 0.95 - (self.height * 0.05 * text_line)
-                self.game_font.render_to(
-                    self.screen, (message_x_pos, message_y_pos), message, (0, 0, 0)
-                )
-                text_line += 1
-
+            # # text
+            # if isinstance(entity, Agent):
+            #     if entity.silent:
+            #         continue
+            #     if np.all(entity.state.c == 0):
+            #         word = "_"
+            #     elif self.continuous_actions:
+            #         word = (
+            #                 "[" + ",".join([f"{comm:.2f}" for comm in entity.state.c]) + "]"
+            #         )
+            #     else:
+            #         word = alphabet[np.argmax(entity.state.c)]
+            #
+            #     message = entity.name + " sends " + word + "   "
+            #     message_x_pos = self.width * 0.05
+            #     message_y_pos = self.height * 0.95 - (self.height * 0.05 * text_line)
+            #     self.game_font.render_to(
+            #         self.screen, (message_x_pos, message_y_pos), message, (0, 0, 0)
+            #     )
+            #     text_line += 1
 
     def reward(self, agent, world):
         """
@@ -620,16 +617,6 @@ class Scenario:
 
         return np.concatenate([array_observation_010, array_observation_020, array_observation_030])
         pass  # function
-
-    def encode_unicode_to_ascii_array(unicode_string: str) -> np.ndarray:
-        """Encode a Unicode string to an array of ASCII integers."""
-        byte_array = unicode_string.encode('utf-8')
-        return np.frombuffer(byte_array, dtype=np.uint8)
-
-    def decode_ascii_array_to_unicode(ascii_array: np.ndarray) -> str:
-        """Decode an ASCII array back to a Unicode string."""
-        byte_array = ascii_array.astype(np.uint8).tobytes()
-        return byte_array.decode('utf-8')
 
     def close(self):
         if self.screen is not None:

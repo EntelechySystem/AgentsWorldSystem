@@ -1,3 +1,4 @@
+# from engine.tools.Tools import Tools
 import numpy as np
 import pygame
 # from gymnasium.spaces import Text
@@ -26,7 +27,7 @@ def decode_unicode_array_to_string(unicode_array: np.ndarray) -> str:
     return byte_array.decode('utf-32', errors='ignore')
 
 
-def process_string(input_string, target_length=256, pad_char=' ', truncate_marker='...'):
+def process_string_to_fix_length(input_string, target_length=256, pad_char=' ', truncate_marker='...'):
     """
     处理字符串，截断或补全到指定长度。
 
@@ -79,7 +80,7 @@ while my_env.agents:
         action_说话_encode = encode_unicode_to_array(action_说话)
         action = {
             # '说话': actions[agent]['说话'],
-            '说话': encode_unicode_to_array(process_string(action_说话)[0]),
+            '说话': encode_unicode_to_array(process_string_to_fix_length(action_说话)[0]),
             # '移动运动': np.clip(1, my_env.action_space(agent)['移动运动'].low, my_env.action_space(agent)['移动运动'].high),
             '移动运动': np.int64(0),
             '抓取运动': np.int64(0),

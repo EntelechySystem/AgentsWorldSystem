@@ -3,12 +3,14 @@ import numpy as np
 import pygame
 # from gymnasium.spaces import Text
 
-from Libraries.WorldLibrary.Virtual2DMiniNurseryEnv_pettingzoo_mpe.world_environment import env, parallel_env, raw_env
-from Libraries.WorldLibrary.Virtual2DMiniNurseryEnv_pettingzoo_mpe._mpe_utils.core import World
-
-my_env = parallel_env(render_mode="human")
-observations, infos = my_env.reset()
-world = World()
+from Libraries.WorldLibrary.Virtual2DMiniNurseryEnv.world_environment import Scenario
+from Libraries.WorldLibrary.Virtual2DMiniNurseryEnv.world_environment import World
+# from .world_environment import Scenario
+# from .world_environment import World
+my_env = Scenario()
+# observations, infos = my_env.reset()
+my_env.reset()
+world = World() #BUG
 
 
 def encode_unicode_to_array(unicode_string: str) -> np.ndarray:
@@ -56,6 +58,7 @@ def process_string_to_fix_length(input_string, target_length=256, pad_char=' ', 
         return input_string, info
         pass  # if
     pass  # function
+
 
 while my_env.agents:
 

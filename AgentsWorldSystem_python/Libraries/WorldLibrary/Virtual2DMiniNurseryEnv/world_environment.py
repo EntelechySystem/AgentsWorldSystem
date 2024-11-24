@@ -21,6 +21,7 @@ observation_spaces = {
     '饥饿状态': spaces.Box(low=0, high=1.0, shape=(1,), dtype=np.float32),  # 0: 不饥饿，1: 饥饿。这里简化饥饿状态为连续动作。
 }
 """
+import logging
 import os
 
 import numpy as np
@@ -28,12 +29,13 @@ import pygame
 # from pettingzoo import AECEnv
 
 # from pettingzoo.utils import ParallelEnv
-# from gymnasium.utils import EzPickle
+from gymnasium.utils import EzPickle
 # from pettingzoo.utils.conversions import parallel_wrapper_fn
 
-import gymnasium
+# import gymnasium
 
 from .core import Agent, Landmark, World, agent_selector
+
 # from .scenario import BaseScenario
 # from .mpe_simple_env import SimpleEnv, make_env
 
@@ -42,35 +44,32 @@ from gymnasium import spaces
 from gymnasium.utils import seeding
 
 
-
-class raw_env(SimpleEnv, EzPickle):
-    def __init__(
-            self,
-            N=3,
-            max_cycles=25,
-            continuous_actions=False,
-            render_mode=None
-    ):
-        EzPickle.__init__(
-            self,
-            N=N,
-            max_cycles=max_cycles,
-            continuous_actions=continuous_actions,
-            render_mode=render_mode,
-        )
-        scenario = Scenario()
-        world = scenario.make_world(N)
-        SimpleEnv.__init__(
-            self,
-            scenario=scenario,
-            world=world,
-            render_mode=render_mode,
-            max_cycles=max_cycles,
-            continuous_actions=continuous_actions,
-        )
-        self.metadata["name"] = "mini_virtual_nursery_v1"
-
-        pass  # function
+# class raw_env( EzPickle):
+#     def __init__(
+#             self,
+#     ):
+#         EzPickle.__init__(
+#             self,
+#             N=N,
+#             max_cycles=max_cycles,
+#             continuous_actions=continuous_actions,
+#             render_mode=render_mode,
+#         )
+#         scenario = Scenario()
+#         world = scenario.make_world(N)
+#         # SimpleEnv.__init__(
+#         #     self,
+#         #     scenario=scenario,
+#         #     world=world,
+#         #     render_mode=render_mode,
+#         #     max_cycles=max_cycles,
+#         #     continuous_actions=continuous_actions,
+#         # )
+#         self.metadata["name"] = "mini_virtual_nursery_v1"
+#
+#         pass  # function
+#
+#     pass  # class
 
 
 # env = make_env(raw_env)
@@ -80,22 +79,26 @@ class raw_env(SimpleEnv, EzPickle):
 # class Scenario(BaseScenario):
 class Scenario:
     metadata = {
-        "render_modes": ["human", "rgb_array"],
-        "is_parallelizable": True,
-        "render_fps": 10,
+        'render_modes': ["human", "rgb_array"],
+        'is_parallelizable': True,
+        'render_fps': 10,
+        'name': "mini_virtual_nursery_v1",
     }
 
     def __init__(
             self,
-            scenario,
-            world,
-            max_cycles,
-            render_mode=None,
-            continuous_actions=False,
+            num_agents=3,
+            # scenario,
+            # world,
             local_ratio=None,
-    ):
-        super().__init__()
+            max_cycles=25,
+            continuous_actions=False,
+            render_mode=None
 
+    ):
+        # super().__init__()
+
+        self.num_agents = num_agents
         self.render_mode = render_mode
         pygame.init()
         self.viewer = None
@@ -113,12 +116,12 @@ class Scenario:
         self._seed()
 
         self.max_cycles = max_cycles
-        self.scenario = scenario
-        self.world = world
+        # self.scenario = scenario
+        self.world = self.make_world()
         self.continuous_actions = continuous_actions
         self.local_ratio = local_ratio
 
-        self.scenario.reset_world(self.world, self.np_random)
+        self.reset_world(self.world, self.np_random)
 
         self.agents = [agent.name for agent in self.world.agents]
         self.possible_agents = self.agents[:]
@@ -159,7 +162,7 @@ class Scenario:
             if agent.需要饮食:
                 饮食_dim = self.world.dim_饮食
 
-            obs_dim = len(self.scenario.observation(agent, self.world))
+            obs_dim = len(self.observation(agent, self.world))
             state_dim += obs_dim
             if self.continuous_actions:  # #HACK 这个 continuous_actions 似乎没有用了
                 self.action_spaces[agent.name] = spaces.Box(
@@ -192,65 +195,19 @@ class Scenario:
         self.steps = 0
 
         self.current_actions = [None] * self.num_agents
+        pass  # function
 
-    def observation_space(self, agent):
-        return self.observation_spaces[agent]
-
-    def action_space(self, agent):
-        return self.action_spaces[agent]
-
-    def _seed(self, seed=None):
-        self.np_random, seed = seeding.np_random(seed)
-
-    def observe(self, agent):
-        return self.scenario.observation(
-            self.world.agents[self._index_map[agent]], self.world
-        ).astype(np.float32)
-
-    # def observation(self, agent):
-    #     visible_entities = self.world.get_visible_entities(agent)
-    #     entity_pos = []
-    #     for entity in visible_entities:
-    #         entity_pos.append(entity.state.p_pos - agent.state.p_pos)
-    #     return np.concatenate([agent.state.p_vel] + entity_pos)
-
-    def state(self):
-        states = tuple(
-            self.scenario.observation(
-                self.world.agents[self._index_map[agent]], self.world
-            ).astype(np.float32)
-            for agent in self.possible_agents
-        )
-        return np.concatenate(states, axis=None)
-
-    def reset(self, seed=None, options=None):
-        if seed is not None:
-            self._seed(seed=seed)
-        self.scenario.reset_world(self.world, self.np_random)
-
-        self.agents = self.possible_agents[:]
-        self.rewards = {name: 0.0 for name in self.agents}
-        self._cumulative_rewards = {name: 0.0 for name in self.agents}
-        self.terminations = {name: False for name in self.agents}
-        self.truncations = {name: False for name in self.agents}
-        self.infos = {name: {} for name in self.agents}
-
-        self.agent_selection = self._agent_selector.reset()
-        self.steps = 0
-
-        self.current_actions = [None] * self.num_agents
-
-    def make_world(self, N=3):
+    def make_world(self):
         world = World()
         # set any world properties first
         world.dim_c = 1
-        num_agents = N
+        num_agents = self.num_agents
         world.num_agents = num_agents
         world.agents = [Agent() for i in range(num_agents)]
         num_landmarks = 0
         # world.agents = [Agent() for i in range(1)]
 
-        agents_name = [f'婴儿-{i}' for i in range(1, N + 1)]
+        agents_name = [f'婴儿-{i}' for i in range(1, self.num_agents + 1)]
 
         # add agents
         for i, agent in enumerate(world.agents):
@@ -302,6 +259,60 @@ class Scenario:
         for i, landmark in enumerate(world.landmarks):
             landmark.state.p_pos = np_random.uniform(-1, +1, world.dim_p)
             landmark.state.p_vel = np.zeros(world.dim_p)
+        pass  # function
+
+    def observation_space(self, agent):
+        return self.observation_spaces[agent]
+        pass  # function
+
+    def action_space(self, agent):
+        return self.action_spaces[agent]
+        pass  # function
+
+    def _seed(self, seed=None):
+        self.np_random, seed = seeding.np_random(seed)
+        pass  # function
+
+    def observe(self, agent):
+        return self.observation(
+            self.world.agents[self._index_map[agent]], self.world
+        ).astype(np.float32)
+        pass  # function
+
+    # def observation(self, agent):
+    #     visible_entities = self.world.get_visible_entities(agent)
+    #     entity_pos = []
+    #     for entity in visible_entities:
+    #         entity_pos.append(entity.state.p_pos - agent.state.p_pos)
+    #     return np.concatenate([agent.state.p_vel] + entity_pos)
+    #     pass  # function
+
+    def state(self):
+        states = tuple(
+            self.observation(
+                self.world.agents[self._index_map[agent]], self.world
+            ).astype(np.float32)
+            for agent in self.possible_agents
+        )
+        return np.concatenate(states, axis=None)
+        pass  # function
+
+    def reset(self, seed=None, options=None):
+        if seed is not None:
+            self._seed(seed=seed)
+        self.reset_world(self.world, self.np_random)
+
+        self.agents = self.possible_agents[:]
+        self.rewards = {name: 0.0 for name in self.agents}
+        self._cumulative_rewards = {name: 0.0 for name in self.agents}
+        self.terminations = {name: False for name in self.agents}
+        self.truncations = {name: False for name in self.agents}
+        self.infos = {name: {} for name in self.agents}
+
+        self.agent_selection = self._agent_selector.reset()
+        self.steps = 0
+
+        self.current_actions = [None] * self.num_agents
         pass  # function
 
     def _execute_world_step(self):
@@ -360,10 +371,10 @@ class Scenario:
 
         global_reward = 0.0
         if self.local_ratio is not None:
-            global_reward = float(self.scenario.global_reward(self.world))
+            global_reward = float(self.global_reward(self.world))
 
         for agent in self.world.agents:
-            agent_reward = float(self.scenario.reward(agent, self.world))
+            agent_reward = float(self.reward(agent, self.world))
             if self.local_ratio is not None:
                 reward = (
                         global_reward * (1 - self.local_ratio)
@@ -373,6 +384,7 @@ class Scenario:
                 reward = agent_reward
 
             self.rewards[agent.name] = reward
+        pass  # function
 
     # set env action for a particular agent
     def _set_action(self, action, agent, action_space, time=None):
@@ -434,6 +446,7 @@ class Scenario:
 
         # make sure we used all elements of action
         assert len(action) == 0
+        pass  # function
 
     def step(self, action):
         if (
@@ -464,6 +477,8 @@ class Scenario:
         if self.render_mode == "human":
             self.render()
 
+        pass  # function
+
     def enable_render(self, mode="human"):
         if not self.renderOn and mode == "human":
             self.screen = pygame.display.set_mode(self.screen.get_size())
@@ -472,7 +487,7 @@ class Scenario:
 
     def render(self):
         if self.render_mode is None:
-            gymnasium.logger.warn(
+            logging.warning(
                 "You are calling render method without specifying any render mode."
             )
             return
@@ -617,6 +632,20 @@ class Scenario:
 
         return np.concatenate([array_observation_010, array_observation_020, array_observation_030])
         pass  # function
+
+    def _clear_rewards(self) -> None:
+        """Clears all items in .rewards."""
+        for agent in self.rewards:
+            self.rewards[agent] = 0
+
+    def _accumulate_rewards(self) -> None:
+        """Adds .rewards dictionary to ._cumulative_rewards dictionary.
+
+        Typically called near the end of a step() method
+        """
+        for agent, reward in self.rewards.items():
+            self._cumulative_rewards[agent] += reward
+
 
     def close(self):
         if self.screen is not None:

@@ -4,6 +4,24 @@ from gymnasium import spaces
 from typing import Any
 
 
+# class Spaces:
+#     @staticmethod
+#     def Dict(**spaces):
+#         return spaces
+#
+#     @staticmethod
+#     def Box(low, high, shape, dtype):
+#         return np.zeros(shape, dtype=dtype)
+#
+#     @staticmethod
+#     def MultiDiscrete(list_n):
+#         return [[x for x in range(int(n))] for n in list_n]
+#
+#     @staticmethod
+#     def Discrete(n: int):
+#         """实现一个离散空间，返回一个从0到n-1的整数序列"""
+#         return [x for x in range(int(n))]
+
 
 class EntityState:  # physical/external base state of all entities
     def __init__(self):
@@ -25,7 +43,7 @@ class AgentState(
         # 听到的内容
         # self.听到的内容 = spaces.Text(64)  # 简化地用文本信息模拟语言语音听觉，模拟来自教育者发送的认识字词句的文本信息。最大接收长度为指定的字符
         self.听到的内容 = spaces.MultiDiscrete([0x10FFFF + 1] * 256)  # 简化地用编码的文本信息模拟语言语音听觉，模拟来自教育者发送的认识字词句的文本信息。最大接收长度为指定的编码后的数组长度
-        # self.听到的内容 = spaces.Box(low=0, high=0x10FFFF, shape=(256,), dtype=np.uint32)  # 备选方案
+        # self.听到的内容 = spaces.box(low=0, high=0x10FFFF, shape=(256,), dtype=np.uint32)  # 备选方案
         # 摸到的内容
         self.摸到的内容 = spaces.Discrete(3)  # 0: 无摸到物体，1: 摸到物体 ，2: 抓取着物体 。这里简化摸到运动为离散动作值
         # 闻到的内容
@@ -300,8 +318,6 @@ class World:  # multi-agent world
         return [force_a, force_b]
 
 
-
-
 class agent_selector:
     """Outputs an agent in the given order whenever agent_select is called.
 
@@ -356,7 +372,7 @@ class agent_selector:
             return NotImplemented
 
         return (
-            self.agent_order == other.agent_order
-            and self._current_agent == other._current_agent
-            and self.selected_agent == other.selected_agent
+                self.agent_order == other.agent_order
+                and self._current_agent == other._current_agent
+                and self.selected_agent == other.selected_agent
         )

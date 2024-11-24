@@ -78,6 +78,16 @@ from gymnasium.utils import seeding
 
 # class Scenario(BaseScenario):
 class Scenario:
+    """
+    The scenario class for the environment.
+
+    Args:
+        num_agents (int): The number of agents in the environment.
+        local_ratio (float): The ratio of local reward to global reward.
+        max_cycles (int): The maximum number of cycles in the environment.
+        continuous_actions (bool): Whether the environment uses continuous actions.
+        render_mode (str): The mode of rendering the environment.
+    """
     metadata = {
         'render_modes': ["human", "rgb_array"],
         'is_parallelizable': True,
@@ -646,6 +656,55 @@ class Scenario:
         for agent, reward in self.rewards.items():
             self._cumulative_rewards[agent] += reward
 
+    def _was_dead_step(self, action) -> None:
+        """Helper function that performs step() for dead agents.
+
+        Does the following:
+
+        1. Removes dead agent from .agents, .terminations, .truncations, .rewards, ._cumulative_rewards, and .infos
+        2. Loads next agent into .agent_selection: if another agent is dead, loads that one, otherwise load next live agent
+        3. Clear the rewards dict
+
+        Examples:
+            Highly recommended to use at the beginning of step as follows:
+
+        def step(self, action):
+            if (self.terminations[self.agent_selection] or self.truncations[self.agent_selection]):
+                self._was_dead_step()
+                return
+            # main contents of step
+        """
+        if action is not None:
+            raise ValueError("when an agent is dead, the only valid action is None")
+
+        # removes dead agent
+        agent = self.agent_selection
+        assert (
+                self.terminations[agent] or self.truncations[agent]
+        ), "an agent that was not dead as attempted to be removed"
+        del self.terminations[agent]
+        del self.truncations[agent]
+        del self.rewards[agent]
+        del self._cumulative_rewards[agent]
+        del self.infos[agent]
+        self.agents.remove(agent)
+
+        # finds next dead agent or loads next live agent (Stored in _skip_agent_selection)
+        _deads_order = [
+            agent
+            for agent in self.agents
+            if (self.terminations[agent] or self.truncations[agent])
+        ]
+        if _deads_order:
+            if getattr(self, "_skip_agent_selection", None) is None:
+                self._skip_agent_selection = self.agent_selection
+            self.agent_selection = _deads_order[0]
+        else:
+            if getattr(self, "_skip_agent_selection", None) is not None:
+                assert self._skip_agent_selection is not None
+                self.agent_selection = self._skip_agent_selection
+            self._skip_agent_selection = None
+        self._clear_rewards()
 
     def close(self):
         if self.screen is not None:

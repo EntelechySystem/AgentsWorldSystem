@@ -7,7 +7,10 @@ from Libraries.WorldLibrary.Virtual2DMiniNurseryEnv.world_environment import Sce
 from Libraries.WorldLibrary.Virtual2DMiniNurseryEnv.world_environment import World
 # from .world_environment import Scenario
 # from .world_environment import World
-my_env = Scenario()
+my_env = Scenario(
+    render_mode='human',
+    local_ratio=0.5,
+)
 # observations, infos = my_env.reset()
 my_env.reset()
 world = World() #BUG

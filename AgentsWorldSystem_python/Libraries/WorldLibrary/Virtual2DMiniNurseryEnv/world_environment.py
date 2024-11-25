@@ -30,11 +30,13 @@ import pygame
 
 # from pettingzoo.utils import ParallelEnv
 from gymnasium.utils import EzPickle
+
+# from engine.libraries.world_environment.test_env import terminations
 # from pettingzoo.utils.conversions import parallel_wrapper_fn
 
 # import gymnasium
 
-from .core import Agent, Landmark, World, agent_selector
+from .core import Agent, Landmark, World, AgentSelector
 
 # from .scenario import BaseScenario
 # from .mpe_simple_env import SimpleEnv, make_env
@@ -139,11 +141,13 @@ class Scenario:
             agent.name: idx for idx, agent in enumerate(self.world.agents)
         }
 
-        self._agent_selector = agent_selector(self.agents)
+        self._agent_selector = AgentSelector(self.agents)
 
         # set spaces
         self.action_spaces = dict()
+        self.actions = dict()
         self.observation_spaces = dict()
+        self.observations = dict()
         state_dim = 0
         for agent in self.world.agents:
             if agent.movable:
@@ -172,7 +176,7 @@ class Scenario:
             if agent.需要饮食:
                 饮食_dim = self.world.dim_饮食
 
-            obs_dim = len(self.observation(agent, self.world))
+            obs_dim = len(self._get_observations(agent, self.world))
             state_dim += obs_dim
             if self.continuous_actions:  # #HACK 这个 continuous_actions 似乎没有用了
                 self.action_spaces[agent.name] = spaces.Box(
@@ -283,11 +287,11 @@ class Scenario:
         self.np_random, seed = seeding.np_random(seed)
         pass  # function
 
-    def observe(self, agent):
-        return self.observation(
-            self.world.agents[self._index_map[agent]], self.world
-        ).astype(np.float32)
-        pass  # function
+    # def observe(self, agent):
+    #     return self._get_observations(
+    #         self.world.agents[self._index_map[agent]], self.world
+    #     ).astype(np.float32)
+    #     pass  # function
 
     # def observation(self, agent):
     #     visible_entities = self.world.get_visible_entities(agent)
@@ -299,7 +303,7 @@ class Scenario:
 
     def state(self):
         states = tuple(
-            self.observation(
+            self._get_observations(
                 self.world.agents[self._index_map[agent]], self.world
             ).astype(np.float32)
             for agent in self.possible_agents
@@ -325,78 +329,78 @@ class Scenario:
         self.current_actions = [None] * self.num_agents
         pass  # function
 
-    def _execute_world_step(self):
-        # set action for each agent
-        for i, agent in enumerate(self.world.agents):
-            action = self.current_actions[i]
-            scenario_action = []
-            if agent.movable:
-                mdim = self.world.dim_p * 2 + 1
-                if self.continuous_actions:
-                    scenario_action.append(action[0:mdim])
-                    action = action[mdim:]
-                else:
-                    scenario_action.append(action['移动运动'] % mdim)
-                    action['移动运动'] //= mdim
+    # def _execute_world_step(self):
+    #     # set action for each agent
+    #     for i, agent in enumerate(self.world.agents):
+    #         action = self.current_actions[i]
+    #         scenario_action = []
+    #         if agent.movable:
+    #             mdim = self.world.dim_p * 2 + 1
+    #             if self.continuous_actions:
+    #                 scenario_action.append(action[0:mdim])
+    #                 action = action[mdim:]
+    #             else:
+    #                 scenario_action.append(action['移动运动'] % mdim)
+    #                 action['移动运动'] //= mdim
+    #
+    #         # if not agent.silent:
+    #         #     cdim = self.world.dim_c
+    #         #     scenario_action.append(action[0:cdim])
+    #         #     action = action[cdim:]
+    #
+    #         # if agent.具有视觉:
+    #         #     scenario_action.append(action[0:self.world.dim_视觉])
+    #         #     action = action[self.world.dim_视觉:]
+    #         # if agent.具有听觉:
+    #         #     scenario_action.append(action[0:self.world.dim_听觉])
+    #         #     action = action[self.world.dim_听觉:]
+    #         # if agent.具有说话能力:
+    #         #     scenario_action.append(action[0:self.world.dim_说话])
+    #         #     action = action[self.world.dim_说话:]
+    #         # if agent.具有触觉:
+    #         #     scenario_action.append(action[0:self.world.dim_触觉])
+    #         #     action = action[self.world.dim_触觉:]
+    #         # if agent.具有嗅觉:
+    #         #     scenario_action.append(action[0:self.world.dim_嗅觉])
+    #         #     action = action[self.world.dim_嗅觉:]
+    #         # if agent.具有温度知觉:
+    #         #     scenario_action.append(action[0:self.world.dim_温度知觉])
+    #         #     action = action[self.world.dim_温度知觉:]
+    #         # if agent.具有疼痛知觉:
+    #         #     scenario_action.append(action[0:self.world.dim_疼痛知觉])
+    #         if agent.具有说话能力:
+    #             scenario_action.append(action['说话'])
+    #         if agent.具有表情:
+    #             scenario_action.append(action['表情'])
+    #         if agent.具有抓取运动能力:
+    #             scenario_action.append(action['抓取运动'])
+    #         if agent.需要睡眠:
+    #             scenario_action.append(action['睡眠'])
+    #         if agent.需要饮食:
+    #             scenario_action.append(action['饮食'])
+    #
+    #         self._set_action(scenario_action, agent, self.action_spaces[agent.name])
+    #
+    #     self.world.step()
+    #
+    #     global_reward = 0.0
+    #     if self.local_ratio is not None:
+    #         global_reward = float(self.global_reward(self.world))
+    #
+    #     for agent in self.world.agents:
+    #         agent_reward = float(self.reward(agent, self.world))
+    #         if self.local_ratio is not None:
+    #             reward = (
+    #                     global_reward * (1 - self.local_ratio)
+    #                     + agent_reward * self.local_ratio
+    #             )
+    #         else:
+    #             reward = agent_reward
+    #
+    #         self.rewards[agent.name] = reward
+    #     pass  # function
 
-            # if not agent.silent:
-            #     cdim = self.world.dim_c
-            #     scenario_action.append(action[0:cdim])
-            #     action = action[cdim:]
-
-            # if agent.具有视觉:
-            #     scenario_action.append(action[0:self.world.dim_视觉])
-            #     action = action[self.world.dim_视觉:]
-            # if agent.具有听觉:
-            #     scenario_action.append(action[0:self.world.dim_听觉])
-            #     action = action[self.world.dim_听觉:]
-            # if agent.具有说话能力:
-            #     scenario_action.append(action[0:self.world.dim_说话])
-            #     action = action[self.world.dim_说话:]
-            # if agent.具有触觉:
-            #     scenario_action.append(action[0:self.world.dim_触觉])
-            #     action = action[self.world.dim_触觉:]
-            # if agent.具有嗅觉:
-            #     scenario_action.append(action[0:self.world.dim_嗅觉])
-            #     action = action[self.world.dim_嗅觉:]
-            # if agent.具有温度知觉:
-            #     scenario_action.append(action[0:self.world.dim_温度知觉])
-            #     action = action[self.world.dim_温度知觉:]
-            # if agent.具有疼痛知觉:
-            #     scenario_action.append(action[0:self.world.dim_疼痛知觉])
-            if agent.具有说话能力:
-                scenario_action.append(action['说话'])
-            if agent.具有表情:
-                scenario_action.append(action['表情'])
-            if agent.具有抓取运动能力:
-                scenario_action.append(action['抓取运动'])
-            if agent.需要睡眠:
-                scenario_action.append(action['睡眠'])
-            if agent.需要饮食:
-                scenario_action.append(action['饮食'])
-
-            self._set_action(scenario_action, agent, self.action_spaces[agent.name])
-
-        self.world.step()
-
-        global_reward = 0.0
-        if self.local_ratio is not None:
-            global_reward = float(self.global_reward(self.world))
-
-        for agent in self.world.agents:
-            agent_reward = float(self.reward(agent, self.world))
-            if self.local_ratio is not None:
-                reward = (
-                        global_reward * (1 - self.local_ratio)
-                        + agent_reward * self.local_ratio
-                )
-            else:
-                reward = agent_reward
-
-            self.rewards[agent.name] = reward
-        pass  # function
-
-    # set env action for a particular agent
+    ## 对单个个体设置动作
     def _set_action(self, action, agent, action_space, time=None):
         agent.action.u = np.zeros(self.world.dim_p)
         agent.action.c = np.zeros(self.world.dim_c)
@@ -458,22 +462,103 @@ class Scenario:
         assert len(action) == 0
         pass  # function
 
-    def step(self, action):
+    # def step(self, action) -> tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]:
+    def step(self, actions):
         if (
                 self.terminations[self.agent_selection]
                 or self.truncations[self.agent_selection]
         ):
-            self._was_dead_step(action)
+            self._was_dead_step(self.actions)
             return
+        self.actions = actions
         cur_agent = self.agent_selection
         current_idx = self._index_map[self.agent_selection]
         next_idx = (current_idx + 1) % self.num_agents
         self.agent_selection = self._agent_selector.next()
 
-        self.current_actions[current_idx] = action
+        self.current_actions[current_idx] = self.actions[cur_agent]
 
         if next_idx == 0:
-            self._execute_world_step()
+            # self._execute_world_step()
+
+            ## 遍历个体设置动作
+            for i, agent in enumerate(self.world.agents):
+                action = self.current_actions[i]
+                scenario_action = []
+                if agent.movable:
+                    mdim = self.world.dim_p * 2 + 1
+                    if self.continuous_actions:
+                        scenario_action.append(action[0:mdim])
+                        action = action[mdim:]
+                    else:
+                        scenario_action.append(action['移动运动'] % mdim)
+                        action['移动运动'] //= mdim
+
+                # if not agent.silent:
+                #     cdim = self.world.dim_c
+                #     scenario_action.append(action[0:cdim])
+                #     action = action[cdim:]
+
+                # if agent.具有视觉:
+                #     scenario_action.append(action[0:self.world.dim_视觉])
+                #     action = action[self.world.dim_视觉:]
+                # if agent.具有听觉:
+                #     scenario_action.append(action[0:self.world.dim_听觉])
+                #     action = action[self.world.dim_听觉:]
+                # if agent.具有说话能力:
+                #     scenario_action.append(action[0:self.world.dim_说话])
+                #     action = action[self.world.dim_说话:]
+                # if agent.具有触觉:
+                #     scenario_action.append(action[0:self.world.dim_触觉])
+                #     action = action[self.world.dim_触觉:]
+                # if agent.具有嗅觉:
+                #     scenario_action.append(action[0:self.world.dim_嗅觉])
+                #     action = action[self.world.dim_嗅觉:]
+                # if agent.具有温度知觉:
+                #     scenario_action.append(action[0:self.world.dim_温度知觉])
+                #     action = action[self.world.dim_温度知觉:]
+                # if agent.具有疼痛知觉:
+                #     scenario_action.append(action[0:self.world.dim_疼痛知觉])
+                if agent.具有说话能力:
+                    scenario_action.append(action['说话'])
+                if agent.具有表情:
+                    scenario_action.append(action['表情'])
+                if agent.具有抓取运动能力:
+                    scenario_action.append(action['抓取运动'])
+                if agent.需要睡眠:
+                    scenario_action.append(action['睡眠'])
+                if agent.需要饮食:
+                    scenario_action.append(action['饮食'])
+
+                ## 对单个个体设置动作
+                self._set_action(scenario_action, agent, self.action_spaces[agent.name])
+
+                pass  # for
+
+            ## 遍历各个个体获取观测
+            for i, agent in enumerate(self.world.agents):
+                self.observations[agent.name] = self._get_observations(agent, self.world)
+                pass  # for
+
+            self.world.step()
+
+            global_reward = 0.0
+            if self.local_ratio is not None:
+                global_reward = float(self._global_reward(self.world))
+
+            for agent in self.world.agents:
+                agent_reward = float(self.reward(agent, self.world))
+                if self.local_ratio is not None:
+                    reward = (
+                            global_reward * (1 - self.local_ratio)
+                            + agent_reward * self.local_ratio
+                    )
+                else:
+                    reward = agent_reward
+
+                self.rewards[agent.name] = reward
+
+            ## ###########################
             self.steps += 1
             if self.steps >= self.max_cycles:
                 for a in self.agents:
@@ -486,6 +571,8 @@ class Scenario:
 
         if self.render_mode == "human":
             self.render()
+
+        return self.observations, self.reward, self.terminations, self.truncations, self.infos
 
         pass  # function
 
@@ -574,7 +661,17 @@ class Scenario:
         return reward
         pass  # function
 
-    def observation(self, agent, world):
+    def _global_reward(self, world):
+        rew = 0
+        for lm in world.landmarks:
+            dists = [
+                np.sqrt(np.sum(np.square(a.state.p_pos - lm.state.p_pos)))
+                for a in world.agents
+            ]
+            rew -= min(dists)
+        return rew
+
+    def _get_observations(self, agent, world):
 
         image_data = np.random.randint(0, 256, (640, 480, 3), dtype=np.uint8)  # DEBUG 这个需要用自己的模型输出表示
         text_data = [0x10FFFF + 1] * np.ones(258, dtype=np.uint32)  # DEBUG 这个需要用自己的模型输出表示

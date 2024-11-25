@@ -77,7 +77,7 @@ class SimpleEnv(AECEnv):
     #         agent.name: idx for idx, agent in enumerate(self.world.agents)
     #     }
     #
-    #     self._agent_selector = agent_selector(self.agents)
+    #     self._agent_selector = AgentSelector(self.agents)
     #
     #     # set spaces
     #     self.action_spaces = dict()

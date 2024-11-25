@@ -65,7 +65,7 @@ def process_string_to_fix_length(input_string, target_length=256, pad_char=' ', 
 
 while my_env.agents:
 
-    # # 随机采样
+    # #DEBUG 随机采样
     # actions = {agent: my_env.action_space(agent).sample() for agent in my_env.agents}
     # print("actions: ")  # #DEBUG
     # for i in actions:
@@ -110,7 +110,7 @@ while my_env.agents:
 
     observations, rewards, terminations, truncations, infos = my_env.step(actions)
 
-    #  #FIXME 把 observations 里的 Numpy 数组内容转换成人类可阅读的内容
+    # #TODO 把 observations 里的 Numpy 数组内容转换成人类可阅读的内容
     # #DEBUG
     print("observations: ")
     for agent_name, agent_observations in observations.items():
@@ -138,14 +138,14 @@ while my_env.agents:
         agent_observations = agent_observations[1:]
         print(f"看到的内容: {observation_看到的内容}")
         print(f"听到的内容: {observation_听到的内容}")
-        print(f"摸到的内容: {observation_摸到的内容}")
-        print(f"闻到的内容: {observation_闻到的内容}")
-        print(f"感知的温度: {observation_感知的温度}")
-        print(f"说话状态: {observation_说话状态}")
-        print(f"抓取状态: {observation_抓取状态}")
-        print(f"困倦状态: {observation_困倦状态}")
-        print(f"饥饿状态: {observation_饥饿状态}")
-        print(f"呈现的表情: {observation_呈现的表情}")
+        print(f"摸到的内容: {observation_摸到的内容}")  #BUG 获取错误信息，还是之前听到的内容，而不是所需的
+        print(f"闻到的内容: {observation_闻到的内容}")  #BUG 获取到错误信息，还是之前听到的内容，而不是所需的
+        print(f"感知的温度: {observation_感知的温度}")  #BUG 获取到错误信息，还是之前听到的内容，而不是所需的
+        print(f"说话状态: {observation_说话状态}")  #BUG 获取到错误信息，还是之前听到的内容，而不是所需的
+        print(f"抓取状态: {observation_抓取状态}")  #BUG 获取到错误信息，还是之前听到的内容，而不是所需的
+        print(f"困倦状态: {observation_困倦状态}")  #BUG 获取到错误信息，还是之前听到的内容，而不是所需的
+        print(f"饥饿状态: {observation_饥饿状态}")  #BUG 获取到错误信息，还是之前听到的内容，而不是所需的
+        print(f"呈现的表情: {observation_呈现的表情}")  #BUG 获取到错误信息，还是之前听到的内容，而不是所需的
         pass  # for
 
     event = pygame.event.poll()

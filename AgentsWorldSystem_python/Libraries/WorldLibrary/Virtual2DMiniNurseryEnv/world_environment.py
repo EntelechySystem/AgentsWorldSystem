@@ -21,74 +21,27 @@ observation_spaces = {
     '饥饿状态': spaces.Box(low=0, high=1.0, shape=(1,), dtype=np.float32),  # 0: 不饥饿，1: 饥饿。这里简化饥饿状态为连续动作。
 }
 """
+from __future__ import annotations
 import logging
 import os
-
-import numpy as np
 import pygame
-# from pettingzoo import AECEnv
-
-# from pettingzoo.utils import ParallelEnv
-from gymnasium.utils import EzPickle
-
-# from engine.libraries.world_environment.test_env import terminations
-# from pettingzoo.utils.conversions import parallel_wrapper_fn
-
-# import gymnasium
-
-from .core import Agent, Landmark, World, AgentSelector
-
-# from .scenario import BaseScenario
-# from .mpe_simple_env import SimpleEnv, make_env
-
-# from pettingzoo.utils import wrappers
-from gymnasium import spaces
 from gymnasium.utils import seeding
+import numpy as np
+from gymnasium import spaces
+from typing import Any
 
 
-# class raw_env( EzPickle):
-#     def __init__(
-#             self,
-#     ):
-#         EzPickle.__init__(
-#             self,
-#             N=N,
-#             max_cycles=max_cycles,
-#             continuous_actions=continuous_actions,
-#             render_mode=render_mode,
-#         )
-#         scenario = Scenario()
-#         world = scenario.make_world(N)
-#         # SimpleEnv.__init__(
-#         #     self,
-#         #     scenario=scenario,
-#         #     world=world,
-#         #     render_mode=render_mode,
-#         #     max_cycles=max_cycles,
-#         #     continuous_actions=continuous_actions,
-#         # )
-#         self.metadata["name"] = "mini_virtual_nursery_v1"
-#
-#         pass  # function
-#
-#     pass  # class
-
-
-# env = make_env(raw_env)
-# parallel_env = parallel_wrapper_fn(env)
-
-
-# class Scenario(BaseScenario):
 class Scenario:
     """
-    The scenario class for the environment.
+    环境主要的场景类，用于定义环境的主要场景。
 
     Args:
-        num_agents (int): The number of agents in the environment.
-        local_ratio (float): The ratio of local reward to global reward.
-        max_cycles (int): The maximum number of cycles in the environment.
-        continuous_actions (bool): Whether the environment uses continuous actions.
-        render_mode (str): The mode of rendering the environment.
+        num_agents (int): 环境中的智能体数量。
+        local_ratio (float): 本地奖励比例。
+        max_cycles (int): 最大回合数。
+        continuous_actions (bool): 是否使用连续动作。
+        render_mode (str): 渲染模式。
+
     """
     metadata = {
         'render_modes': ["human", "rgb_array"],
@@ -100,16 +53,12 @@ class Scenario:
     def __init__(
             self,
             num_agents=3,
-            # scenario,
-            # world,
             local_ratio=None,
             max_cycles=25,
             continuous_actions=False,
             render_mode=None
 
     ):
-        # super().__init__()
-
         self.num_agents = num_agents
         self.render_mode = render_mode
         pygame.init()
@@ -128,7 +77,6 @@ class Scenario:
         self._seed()
 
         self.max_cycles = max_cycles
-        # self.scenario = scenario
         self.world = self.make_world()
         self.continuous_actions = continuous_actions
         self.local_ratio = local_ratio
@@ -329,77 +277,6 @@ class Scenario:
         self.current_actions = [None] * self.num_agents
         pass  # function
 
-    # def _execute_world_step(self):
-    #     # set action for each agent
-    #     for i, agent in enumerate(self.world.agents):
-    #         action = self.current_actions[i]
-    #         scenario_action = []
-    #         if agent.movable:
-    #             mdim = self.world.dim_p * 2 + 1
-    #             if self.continuous_actions:
-    #                 scenario_action.append(action[0:mdim])
-    #                 action = action[mdim:]
-    #             else:
-    #                 scenario_action.append(action['移动运动'] % mdim)
-    #                 action['移动运动'] //= mdim
-    #
-    #         # if not agent.silent:
-    #         #     cdim = self.world.dim_c
-    #         #     scenario_action.append(action[0:cdim])
-    #         #     action = action[cdim:]
-    #
-    #         # if agent.具有视觉:
-    #         #     scenario_action.append(action[0:self.world.dim_视觉])
-    #         #     action = action[self.world.dim_视觉:]
-    #         # if agent.具有听觉:
-    #         #     scenario_action.append(action[0:self.world.dim_听觉])
-    #         #     action = action[self.world.dim_听觉:]
-    #         # if agent.具有说话能力:
-    #         #     scenario_action.append(action[0:self.world.dim_说话])
-    #         #     action = action[self.world.dim_说话:]
-    #         # if agent.具有触觉:
-    #         #     scenario_action.append(action[0:self.world.dim_触觉])
-    #         #     action = action[self.world.dim_触觉:]
-    #         # if agent.具有嗅觉:
-    #         #     scenario_action.append(action[0:self.world.dim_嗅觉])
-    #         #     action = action[self.world.dim_嗅觉:]
-    #         # if agent.具有温度知觉:
-    #         #     scenario_action.append(action[0:self.world.dim_温度知觉])
-    #         #     action = action[self.world.dim_温度知觉:]
-    #         # if agent.具有疼痛知觉:
-    #         #     scenario_action.append(action[0:self.world.dim_疼痛知觉])
-    #         if agent.具有说话能力:
-    #             scenario_action.append(action['说话'])
-    #         if agent.具有表情:
-    #             scenario_action.append(action['表情'])
-    #         if agent.具有抓取运动能力:
-    #             scenario_action.append(action['抓取运动'])
-    #         if agent.需要睡眠:
-    #             scenario_action.append(action['睡眠'])
-    #         if agent.需要饮食:
-    #             scenario_action.append(action['饮食'])
-    #
-    #         self._set_action(scenario_action, agent, self.action_spaces[agent.name])
-    #
-    #     self.world.step()
-    #
-    #     global_reward = 0.0
-    #     if self.local_ratio is not None:
-    #         global_reward = float(self.global_reward(self.world))
-    #
-    #     for agent in self.world.agents:
-    #         agent_reward = float(self.reward(agent, self.world))
-    #         if self.local_ratio is not None:
-    #             reward = (
-    #                     global_reward * (1 - self.local_ratio)
-    #                     + agent_reward * self.local_ratio
-    #             )
-    #         else:
-    #             reward = agent_reward
-    #
-    #         self.rewards[agent.name] = reward
-    #     pass  # function
-
     ## 对单个个体设置动作
     def _set_action(self, action, agent, action_space, time=None):
         agent.action.u = np.zeros(self.world.dim_p)
@@ -433,16 +310,7 @@ class Scenario:
                 sensitivity = agent.accel
             agent.action.u *= sensitivity
             action = action[1:]
-        # if not agent.silent:
-        #     # communication action
-        #     if self.continuous_actions:
-        #         agent.action.c = action[0]
-        #     else:
-        #         agent.action.c = np.zeros(self.world.dim_c)
-        #         agent.action.c[action[0]] = 1.0
         if agent.具有说话能力:
-            # agent.action.说话 = action[0: self.world.dim_说话]
-            # action = action[self.world.dim_说话:]
             agent.action.说话 = action[0]
             action = action[1:]
         if agent.具有表情:
@@ -462,7 +330,6 @@ class Scenario:
         assert len(action) == 0
         pass  # function
 
-    # def step(self, action) -> tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]:
     def step(self, actions):
         if (
                 self.terminations[self.agent_selection]
@@ -494,31 +361,6 @@ class Scenario:
                         scenario_action.append(action['移动运动'] % mdim)
                         action['移动运动'] //= mdim
 
-                # if not agent.silent:
-                #     cdim = self.world.dim_c
-                #     scenario_action.append(action[0:cdim])
-                #     action = action[cdim:]
-
-                # if agent.具有视觉:
-                #     scenario_action.append(action[0:self.world.dim_视觉])
-                #     action = action[self.world.dim_视觉:]
-                # if agent.具有听觉:
-                #     scenario_action.append(action[0:self.world.dim_听觉])
-                #     action = action[self.world.dim_听觉:]
-                # if agent.具有说话能力:
-                #     scenario_action.append(action[0:self.world.dim_说话])
-                #     action = action[self.world.dim_说话:]
-                # if agent.具有触觉:
-                #     scenario_action.append(action[0:self.world.dim_触觉])
-                #     action = action[self.world.dim_触觉:]
-                # if agent.具有嗅觉:
-                #     scenario_action.append(action[0:self.world.dim_嗅觉])
-                #     action = action[self.world.dim_嗅觉:]
-                # if agent.具有温度知觉:
-                #     scenario_action.append(action[0:self.world.dim_温度知觉])
-                #     action = action[self.world.dim_温度知觉:]
-                # if agent.具有疼痛知觉:
-                #     scenario_action.append(action[0:self.world.dim_疼痛知觉])
                 if agent.具有说话能力:
                     scenario_action.append(action['说话'])
                 if agent.具有表情:
@@ -558,7 +400,6 @@ class Scenario:
 
                 self.rewards[agent.name] = reward
 
-            ## ###########################
             self.steps += 1
             if self.steps >= self.max_cycles:
                 for a in self.agents:
@@ -812,3 +653,369 @@ class Scenario:
     #     pass  # function
 
     pass  # class
+
+
+# class Spaces:
+#     @staticmethod
+#     def Dict(**spaces):
+#         return spaces
+#
+#     @staticmethod
+#     def Box(low, high, shape, dtype):
+#         return np.zeros(shape, dtype=dtype)
+#
+#     @staticmethod
+#     def MultiDiscrete(list_n):
+#         return [[x for x in range(int(n))] for n in list_n]
+#
+#     @staticmethod
+#     def Discrete(n: int):
+#         """实现一个离散空间，返回一个从0到n-1的整数序列"""
+#         return [x for x in range(int(n))]
+
+
+class EntityState:  # physical/external base state of all entities
+    def __init__(self):
+        # physical position
+        self.p_pos = None
+        # physical velocity
+        self.p_vel = None
+
+
+class AgentState(
+    EntityState
+):  # state of agents (including communication and internal/mental state)
+    def __init__(self):
+        super().__init__()
+        # # communication utterance
+        # self.c = None
+        # 看到的内容
+        self.看到的内容 = spaces.Box(low=0, high=255, shape=(640, 480, 3), dtype=np.uint8)
+        # 听到的内容
+        # self.听到的内容 = spaces.Text(64)  # 简化地用文本信息模拟语言语音听觉，模拟来自教育者发送的认识字词句的文本信息。最大接收长度为指定的字符
+        self.听到的内容 = spaces.MultiDiscrete([0x10FFFF + 1] * 256)  # 简化地用编码的文本信息模拟语言语音听觉，模拟来自教育者发送的认识字词句的文本信息。最大接收长度为指定的编码后的数组长度
+        # self.听到的内容 = spaces.box(low=0, high=0x10FFFF, shape=(256,), dtype=np.uint32)  # 备选方案
+        # 摸到的内容
+        self.摸到的内容 = spaces.Discrete(3)  # 0: 无摸到物体，1: 摸到物体 ，2: 抓取着物体 。这里简化摸到运动为离散动作值
+        # 闻到的内容
+        self.闻到的内容 = spaces.Discrete(2)  # 0: 无闻到物体，1: 闻到物体 。这里简化闻到运动为离散动作值
+        # 感知的温度
+        self.感知的温度 = spaces.Box(low=-20.0, high=100.0, shape=(1,), dtype=np.float32)  # -20~100摄氏度
+        # 说话状态
+        self.说话状态 = spaces.Discrete(2)  # 0: 不说话，1: 说话。这里简化了说话状态为二元动作。
+        # 抓取状态
+        self.抓取状态 = spaces.Discrete(2)  # 0: 无抓取物体，1: 抓取物体 。这里简化抓取运动为二元动作。真实的抓取运动十分复杂，需要更复杂的动作空间。
+        # 困倦状态
+        self.困倦状态 = spaces.Box(low=0, high=1.0, shape=(1, 1), dtype=np.float32)  # 0: 不困倦，1: 困倦。这里简化困倦状态为连续动作。
+        # 饥饿状态
+        self.饥饿状态 = spaces.Box(low=0, high=1.0, shape=(1, 1), dtype=np.float32)  # 0: 不饥饿，1: 饥饿。这里简化饥饿状态为连续动作。
+        # 呈现的表情
+        self.呈现的表情 = spaces.Discrete(6),  # 0: 静，1: 喜，2: 怒，3: 哀，4: 惧，5: 思。 这里简化了输出的表情为离散动作值
+
+
+class Action:  # action of the agent
+    def __init__(self):
+        # physical action
+        # 说话
+        self.说话 = None
+        # 表情
+        self.表情 = None
+        # 抓取运动
+        self.抓取运动 = None
+        # 睡眠
+        self.睡眠 = None
+        # 饮食
+        self.饮食 = None
+
+
+class Entity:  # properties and state of physical world entity
+    def __init__(self):
+        # name
+        self.name = ""
+        # properties:
+        self.size = 0.050
+        # entity can move / be pushed
+        self.movable = False
+        # entity collides with others
+        self.collide = True
+        # material density (affects mass)
+        self.density = 25.0
+        # color
+        self.color = None
+        # max speed and accel
+        self.max_speed = None
+        self.accel = None
+        # state
+        self.state = EntityState()
+        # mass
+        self.initial_mass = 1.0
+
+    @property
+    def mass(self):
+        return self.initial_mass
+
+
+class Landmark(Entity):  # properties of landmark entities
+    def __init__(self):
+        super().__init__()
+
+
+class Agent(Entity):  # properties of agent entities
+    def __init__(self):
+        super().__init__()
+        # agents are movable by default
+        self.movable = True
+        # 具有视觉
+        self.具有视觉 = True
+        # 具有听觉
+        self.具有听觉 = True
+        # 具有说话能力
+        self.具有说话能力 = True
+        # 具有触觉
+        self.具有触觉 = True
+        # 具有嗅觉
+        self.具有嗅觉 = True
+        # 具有温度知觉
+        self.具有温度知觉 = True
+        # 具有疼痛知觉
+        self.具有疼痛知觉 = True
+        # 具有抓取运动能力
+        self.具有抓取运动能力 = True
+        # 需要睡眠
+        self.需要睡眠 = True
+        # 需要饮食
+        self.需要饮食 = True
+        # 具有表情
+        self.具有表情 = True
+        # physical motor noise amount
+        self.u_noise = None
+        # communication noise amount
+        self.c_noise = None
+        # control range
+        self.u_range = 1.0
+        # state
+        self.state = AgentState()
+        # action
+        self.action = Action()
+        # script behavior to execute
+        self.action_callback = None
+        # 视野半径（视野默认是俯视角，可以穿墙） #TODO 后续考虑加入视野角度，视野是俯视角但是从个体中心向外辐射，因此视野不能够穿越非透明的障碍物。
+        self.vision_radius = 10.0  # 可视半径  #TODO 暂时还没有用起来
+
+
+class World:  # multi-agent world
+    def __init__(self):
+        # list of agents and entities (can change at execution-time!)
+        self.agents = []
+        self.landmarks = []
+        # position dimensionality
+        self.dim_p = 2
+        # 视觉 shape
+        self.shape_视觉 = (640, 480, 3)
+        # 视觉 dimensionality
+        self.dim_视觉 = self.shape_视觉[0] * self.shape_视觉[1] * self.shape_视觉[2]
+        # 听觉 dimensionality
+        self.dim_听觉 = 256
+        # 说话 dimensionality
+        self.dim_说话 = 256
+        # 触觉 dimensionality
+        self.dim_触觉 = 1
+        # 嗅觉 dimensionality
+        self.dim_嗅觉 = 1
+        # 温度知觉 dimensionality
+        self.dim_温度知觉 = 1
+        # 疼痛知觉 dimensionality
+        self.dim_疼痛知觉 = 1
+        # 抓取运动 dimensionality
+        self.dim_抓取运动 = 1
+        # 睡眠行为 dimensionality
+        self.dim_睡眠 = 1
+        # 饮食行为 dimensionality
+        self.dim_饮食 = 1
+        # 呈现的表情 dimensionality
+        self.dim_表情 = 1
+        # color dimensionality
+        self.dim_color = 3
+        # simulation timestep
+        self.dt = 0.1
+        # physical damping
+        self.damping = 0.25
+        # contact response parameters
+        self.contact_force = 1e2
+        self.contact_margin = 1e-3
+
+    # return all entities in the world
+    @property
+    def entities(self):
+        return self.agents + self.landmarks
+
+    # return all agents controllable by external policies
+    @property
+    def policy_agents(self):
+        return [agent for agent in self.agents if agent.action_callback is None]
+
+    # return all agents controlled by world scripts
+    @property
+    def scripted_agents(self):
+        return [agent for agent in self.agents if agent.action_callback is not None]
+
+    # update state of the world
+    def step(self):
+        # set actions for scripted agents
+        for agent in self.scripted_agents:
+            agent.action = agent.action_callback(agent, self)
+        # gather forces applied to entities
+        p_force = [None] * len(self.entities)
+        # apply agent physical controls
+        p_force = self.apply_action_force(p_force)
+        # apply environment forces
+        p_force = self.apply_environment_force(p_force)
+        # integrate physical state
+        self.integrate_state(p_force)
+        # update agent state
+        for agent in self.agents:
+            self.update_agent_state(agent)
+
+    # gather agent action forces
+    def apply_action_force(self, p_force):
+        # set applied forces
+        for i, agent in enumerate(self.agents):
+            if agent.movable:
+                noise = (
+                    np.random.randn(*agent.action.u.shape) * agent.u_noise
+                    if agent.u_noise
+                    else 0.0
+                )
+                p_force[i] = agent.action.u + noise
+        return p_force
+
+    # gather physical forces acting on entities
+    def apply_environment_force(self, p_force):
+        # simple (but inefficient) collision response
+        for a, entity_a in enumerate(self.entities):
+            for b, entity_b in enumerate(self.entities):
+                if b <= a:
+                    continue
+                [f_a, f_b] = self.get_collision_force(entity_a, entity_b)
+                if f_a is not None:
+                    if p_force[a] is None:
+                        p_force[a] = 0.0
+                    p_force[a] = f_a + p_force[a]
+                if f_b is not None:
+                    if p_force[b] is None:
+                        p_force[b] = 0.0
+                    p_force[b] = f_b + p_force[b]
+        return p_force
+
+    # integrate physical state
+    def integrate_state(self, p_force):
+        for i, entity in enumerate(self.entities):
+            if not entity.movable:
+                continue
+            entity.state.p_pos += entity.state.p_vel * self.dt
+            entity.state.p_vel = entity.state.p_vel * (1 - self.damping)
+            if p_force[i] is not None:
+                entity.state.p_vel += (p_force[i] / entity.mass) * self.dt
+            if entity.max_speed is not None:
+                speed = np.sqrt(
+                    np.square(entity.state.p_vel[0]) + np.square(entity.state.p_vel[1])
+                )
+                if speed > entity.max_speed:
+                    entity.state.p_vel = (
+                            entity.state.p_vel
+                            / np.sqrt(
+                        np.square(entity.state.p_vel[0])
+                        + np.square(entity.state.p_vel[1])
+                    )
+                            * entity.max_speed
+                    )
+
+    def update_agent_state(self, agent):
+        # set communication state (directly for now)
+        if agent.silent:
+            agent.state.c = np.zeros(self.dim_c)
+        else:
+            noise = (
+                np.random.randn(*agent.action.c.shape) * agent.c_noise
+                if agent.c_noise
+                else 0.0
+            )
+            agent.state.c = agent.action.c + noise
+
+    # get collision forces for any contact between two entities
+    def get_collision_force(self, entity_a, entity_b):
+        if (not entity_a.collide) or (not entity_b.collide):
+            return [None, None]  # not a collider
+        if entity_a is entity_b:
+            return [None, None]  # don't collide against itself
+        # compute actual distance between entities
+        delta_pos = entity_a.state.p_pos - entity_b.state.p_pos
+        dist = np.sqrt(np.sum(np.square(delta_pos)))
+        # minimum allowable distance
+        dist_min = entity_a.size + entity_b.size
+        # softmax penetration
+        k = self.contact_margin
+        penetration = np.logaddexp(0, -(dist - dist_min) / k) * k
+        force = self.contact_force * delta_pos / dist * penetration
+        force_a = +force if entity_a.movable else None
+        force_b = -force if entity_b.movable else None
+        return [force_a, force_b]
+
+
+class AgentSelector:
+    """Outputs an agent in the given order whenever agent_select is called.
+
+    Can reinitialize to a new order.
+
+    Example:
+        >>> agent_selector = AgentSelector(agent_order=["player1", "player2"])
+        >>> agent_selector.reset()
+        'player1'
+        >>> agent_selector.next()
+        'player2'
+        >>> agent_selector.is_last()
+        True
+        >>> agent_selector.reinit(agent_order=["player2", "player1"])
+        >>> agent_selector.next()
+        'player2'
+        >>> agent_selector.is_last()
+        False
+    """
+
+    def __init__(self, agent_order: list[Any]):
+        self.reinit(agent_order)
+
+    def reinit(self, agent_order: list[Any]) -> None:
+        """Reinitialize to a new order."""
+        self.agent_order = agent_order
+        self._current_agent = 0
+        self.selected_agent = 0
+
+    def reset(self) -> Any:
+        """Reset to the original order."""
+        self.reinit(self.agent_order)
+        return self.next()
+
+    def next(self) -> Any:
+        """Get the next agent."""
+        self._current_agent = (self._current_agent + 1) % len(self.agent_order)
+        self.selected_agent = self.agent_order[self._current_agent - 1]
+        return self.selected_agent
+
+    def is_last(self) -> bool:
+        """Check if the current agent is the last agent in the cycle."""
+        return self.selected_agent == self.agent_order[-1]
+
+    def is_first(self) -> bool:
+        """Check if the current agent is the first agent in the cycle."""
+        return self.selected_agent == self.agent_order[0]
+
+    def __eq__(self, other: AgentSelector) -> bool:
+        if not isinstance(other, AgentSelector):
+            return NotImplemented
+
+        return (
+                self.agent_order == other.agent_order
+                and self._current_agent == other._current_agent
+                and self.selected_agent == other.selected_agent
+        )

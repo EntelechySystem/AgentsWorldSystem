@@ -1,35 +1,38 @@
 # from engine.tools.Tools import Tools
 import numpy as np
 import pygame
-# from gymnasium.spaces import Text
+import matplotlib.pyplot as plt
+
+# 设置 Matplotlib 使用支持 CJK 字符的字体
+from matplotlib import font_manager
+
+font_path = '/System/Library/Fonts/STHeiti Light.ttc'  # macOS 上的中文字体路径
+font_prop = font_manager.FontProperties(fname=font_path)
+plt.rcParams['font.family'] = font_prop.get_name()
 
 from Libraries.WorldLibrary.Virtual2DMiniNurseryEnv.world_environment import Scenario
 from Libraries.WorldLibrary.Virtual2DMiniNurseryEnv.world_environment import World
-# from .world_environment import Scenario
-# from .world_environment import World
+
 my_env = Scenario(
     render_mode='human',
     local_ratio=0.5,
 )
 # observations, infos = my_env.reset()
 my_env.reset()
-world = World() #BUG
+world = World()  # BUG
 
 
 def encode_unicode_to_array(unicode_string: str) -> np.ndarray:
     """编码 Unicode 字符串为 Unicode 整数数组。"""
     return np.array([ord(char) for char in unicode_string], dtype=np.uint32)
-
-
-# def decode_array_to_unicode(unicode_array: np.ndarray) -> str:
-#     """解码 Unicode 整数数组为 Unicode 字符串。"""
-#     return ''.join([chr(code_point) for code_point in unicode_array])
+    pass  # function
 
 
 def decode_unicode_array_to_string(unicode_array: np.ndarray) -> str:
     """解码 Unicode 整数数组为字符串。"""
     byte_array = (unicode_array % 0x10FFFF).astype(np.uint32).tobytes()
     return byte_array.decode('utf-32', errors='ignore')
+    pass  # function
 
 
 def process_string_to_fix_length(input_string, target_length=256, pad_char=' ', truncate_marker='...'):
@@ -110,42 +113,48 @@ while my_env.agents:
 
     observations, rewards, terminations, truncations, infos = my_env.step(actions)
 
-    # #TODO 把 observations 里的 Numpy 数组内容转换成人类可阅读的内容
+    # #NOW 把 observations 里的 Numpy 数组内容转换成人类可阅读的内容
     # #DEBUG
     print("observations: ")
     for agent_name, agent_observations in observations.items():
         print(f"{agent_name}:")
         # 逆向 observations 里的 Numpy 数组内容为一个个具体的观察值
-        observation_看到的内容 = agent_observations[:world.dim_视觉]
-        agent_observations = agent_observations[world.dim_视觉:]
-        observation_听到的内容 = agent_observations[:world.dim_听觉]
-        agent_observations = agent_observations[world.dim_听觉:]
-        observation_摸到的内容 = agent_observations[:world.dim_触觉]
-        agent_observations = agent_observations[world.dim_触觉:]
-        observation_闻到的内容 = agent_observations[:world.dim_嗅觉]
-        agent_observations = agent_observations[world.dim_嗅觉:]
+        observation_看到的内容 = agent_observations[:my_env.world.dim_视觉]
+        #  将其重新变成一个图像形状的 Numpy 数组，然后用 Matplotlib 可视化显示该图像
+        observation_看到的内容 = np.clip(observation_看到的内容.reshape(my_env.world.shape_视觉), 0, 255).astype(np.uint8)
+        print(f"看到的内容: {observation_看到的内容}")
+        plt.imshow(observation_看到的内容)
+        plt.title('Observation 看到的内容')
+        # plt.show()
+
+        agent_observations = agent_observations[my_env.world.dim_视觉:]
+        observation_听到的内容 = agent_observations[:my_env.world.dim_听觉]
+        print(f"听到的内容: {decode_unicode_array_to_string(observation_听到的内容)}")
+        agent_observations = agent_observations[my_env.world.dim_听觉:]
+        observation_摸到的内容 = agent_observations[:my_env.world.dim_触觉]
+        print(f"摸到的内容: {observation_摸到的内容}")  # BUG 获取错误信息，还是之前听到的内容，而不是所需的
+        agent_observations = agent_observations[my_env.world.dim_触觉:]
+        observation_闻到的内容 = agent_observations[:my_env.world.dim_嗅觉]
+        print(f"闻到的内容: {observation_闻到的内容}")  # BUG 获取到错误信息，还是之前听到的内容，而不是所需的
+        agent_observations = agent_observations[my_env.world.dim_嗅觉:]
         observation_感知的温度 = agent_observations[0]
+        print(f"感知的温度: {observation_感知的温度}")  # BUG 获取到错误信息，还是之前听到的内容，而不是所需的
         agent_observations = agent_observations[1:]
         observation_说话状态 = agent_observations[0]
+        print(f"说话状态: {observation_说话状态}")  # BUG 获取到错误信息，还是之前听到的内容，而不是所需的
         agent_observations = agent_observations[1:]
         observation_抓取状态 = agent_observations[0]
+        print(f"抓取状态: {observation_抓取状态}")  # BUG 获取到错误信息，还是之前听到的内容，而不是所需的
         agent_observations = agent_observations[1:]
         observation_困倦状态 = agent_observations[0]
+        print(f"困倦状态: {observation_困倦状态}")  # BUG 获取到错误信息，还是之前听到的内容，而不是所需的
         agent_observations = agent_observations[1:]
         observation_饥饿状态 = agent_observations[0]
+        print(f"饥饿状态: {observation_饥饿状态}")  # BUG 获取到错误信息，还是之前听到的内容，而不是所需的
         agent_observations = agent_observations[1:]
         observation_呈现的表情 = agent_observations[0]
+        print(f"呈现的表情: {observation_呈现的表情}")  # BUG 获取到错误信息，还是之前听到的内容，而不是所需的
         agent_observations = agent_observations[1:]
-        print(f"看到的内容: {observation_看到的内容}")
-        print(f"听到的内容: {observation_听到的内容}")
-        print(f"摸到的内容: {observation_摸到的内容}")  #BUG 获取错误信息，还是之前听到的内容，而不是所需的
-        print(f"闻到的内容: {observation_闻到的内容}")  #BUG 获取到错误信息，还是之前听到的内容，而不是所需的
-        print(f"感知的温度: {observation_感知的温度}")  #BUG 获取到错误信息，还是之前听到的内容，而不是所需的
-        print(f"说话状态: {observation_说话状态}")  #BUG 获取到错误信息，还是之前听到的内容，而不是所需的
-        print(f"抓取状态: {observation_抓取状态}")  #BUG 获取到错误信息，还是之前听到的内容，而不是所需的
-        print(f"困倦状态: {observation_困倦状态}")  #BUG 获取到错误信息，还是之前听到的内容，而不是所需的
-        print(f"饥饿状态: {observation_饥饿状态}")  #BUG 获取到错误信息，还是之前听到的内容，而不是所需的
-        print(f"呈现的表情: {observation_呈现的表情}")  #BUG 获取到错误信息，还是之前听到的内容，而不是所需的
         pass  # for
 
     event = pygame.event.poll()

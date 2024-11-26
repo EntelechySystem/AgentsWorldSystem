@@ -21,7 +21,6 @@ my_env = Scenario(
 )
 # observations, infos = my_env.reset()
 my_env.reset()
-world = World()  # BUG
 
 while my_env.agents:
 
